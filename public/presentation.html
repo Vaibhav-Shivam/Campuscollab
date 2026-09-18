@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusCollab — Complete Function & Architecture Presentation</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #FAF8F5;
+            --color-black: #000000;
+            --color-white: #FFFFFF;
+            --color-yellow: #FFDE59;
+            --color-pink: #FF70A6;
+            --color-mint: #4FD1C5;
+            --color-purple: #9B87F5;
+            --color-coral: #FF6B6B;
+            --color-green: #38E54D;
+            --neo-border: 2.5px solid #000000;
+            --neo-shadow: 5px 5px 0px 0px #000000;
+            --neo-shadow-lg: 7px 7px 0px 0px #000000;
+            --neo-shadow-sm: 2.5px 2.5px 0px 0px #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #121212;
+            color: #000000;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 16:9 Aspect Ratio Deck Container */
+        .slide-deck {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: calc(100vh * 16 / 9);
+            max-height: calc(100vw * 9 / 16);
+            overflow: hidden;
+            background-color: var(--bg-canvas);
+            border: var(--neo-border);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px 60px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: scale(0.98);
+            background-color: var(--bg-canvas);
+            background-image: radial-gradient(#000000 1.2px, transparent 1.2px);
+            background-size: 24px 24px;
+            overflow-y: auto;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+        }
+
+        /* Slide Content Structure */
+        .slide-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: var(--neo-border);
+            padding-bottom: 14px;
+            margin-bottom: 20px;
+        }
+
+        .slide-badge {
+            background-color: var(--color-yellow);
+            color: #000;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 999px;
+            border: 2px solid #000;
+            box-shadow: var(--neo-shadow-sm);
+            letter-spacing: 0.05em;
+        }
+
+        .slide-title {
+            font-size: clamp(26px, 3.5vw, 42px);
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+        }
+
+        .slide-subtitle {
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+            margin-top: 4px;
+        }
+
+        .slide-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        /* Neo-Brutalist UI Primitives */
+        .neo-box {
+            background: var(--color-white);
+            border: var(--neo-border);
+            box-shadow: var(--neo-shadow);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .neo-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border: 2px solid #000;
+            box-shadow: 2px 2px 0px 0px #000;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .feature-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--color-yellow);
+            border: 2px solid #000;
+            box-shadow: 2px 2px 0px 0px #000;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        /* Navigation Controls */
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 5px;
+            background: var(--color-pink);
+            border-bottom: 1.5px solid #000;
+            transition: width 0.3s ease;
+            z-index: 100;
+        }
+
+        .nav-controls {
+            position: absolute;
+            bottom: 18px;
+            right: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: var(--color-yellow);
+            border: 2px solid #000;
+            color: #000;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            box-shadow: 2.5px 2.5px 0px 0px #000;
+            cursor: pointer;
+            font-weight: 900;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .nav-btn:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px 0px #000;
+        }
+
+        .nav-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px #000;
+        }
+
+        .slide-counter {
+            font-size: 12px;
+            font-weight: 900;
+            background: var(--color-white);
+            border: 2px solid #000;
+            padding: 5px 12px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 0px 0px #000;
+        }
+
+        .platform-link {
+            position: absolute;
+            bottom: 18px;
+            left: 24px;
+            z-index: 100;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #000;
+            text-decoration: none;
+            background: var(--color-mint);
+            border: 2px solid #000;
+            padding: 6px 14px;
+            border-radius: 10px;
+            box-shadow: 2.5px 2.5px 0px 0px #000;
+        }
+
+        .platform-link:hover {
+            background: var(--color-yellow);
+        }
+
+        /* Code Pill */
+        .code-pill {
+            background: #222;
+            color: #FFDE59;
+            font-family: monospace;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="slide-deck">
+        <!-- Progress Bar -->
+        <div class="progress-bar" id="progressBar"></div>
+
+        <!-- ==================== SLIDE 1: TITLE & PLATFORM IDENTITY ==================== -->
+        <div class="slide active">
+            <div class="slide-header">
+                <span class="slide-badge">CampusCollab Presentation · Deck 01</span>
+                <span class="neo-pill" style="background: var(--color-mint);">● Live Production</span>
+            </div>
+            <div class="slide-body" style="text-align: center; align-items: center; justify-content: center;">
+                <div style="display: inline-block; width: 64px; height: 64px; border-radius: 20px; background: var(--color-yellow); border: var(--neo-border); box-shadow: var(--neo-shadow); font-size: 32px; font-weight: 900; line-height: 60px; margin-bottom: 15px;">
+                    ★
+                </div>
+                <h1 style="font-size: clamp(38px, 5.5vw, 68px); font-weight: 900; text-transform: uppercase; line-height: 1.0; letter-spacing: -0.03em;">
+                    CAMPUSCOLLAB
+                </h1>
+                <div style="background: var(--color-pink); display: inline-block; padding: 6px 20px; border: var(--neo-border); box-shadow: var(--neo-shadow); border-radius: 12px; margin: 12px 0 20px 0; transform: rotate(-1deg);">
+                    <span style="font-size: 18px; font-weight: 900; text-transform: uppercase;">
+                        Find People · Build Projects · Grow Together
+                    </span>
+                </div>
+                <p style="font-size: 15px; font-weight: 600; max-width: 650px; color: #222; line-height: 1.5;">
+                    A comprehensive walk-through of every function, user workflow, and architectural layer powering the student talent and project collaboration platform.
+                </p>
+                <div style="display: flex; gap: 12px; margin-top: 25px;">
+                    <span class="neo-pill" style="background: var(--color-yellow);">12 Core Functions</span>
+                    <span class="neo-pill" style="background: var(--color-purple); color: #000;">AWS Serverless</span>
+                    <span class="neo-pill" style="background: var(--color-mint);">Neo-Brutalism UI</span>
+                    <span class="neo-pill" style="background: var(--color-coral);">AI Matching</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 2: THE PROBLEM & CORE CAMPUS LOOP ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 01 · Conceptual Engine</span>
+                    <h2 class="slide-title">The Problem & The Campus Loop</h2>
+                    <div class="slide-subtitle">Replacing chaotic WhatsApp groups and generic social networks with a verified workflow.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-2">
+                    <div class="neo-box" style="background: #FFE8E8; border-color: #000;">
+                        <div class="feature-icon" style="background: var(--color-coral);">✕</div>
+                        <h3 style="font-size: 18px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">The Broken Status Quo</h3>
+                        <ul style="font-size: 12px; font-weight: 600; line-height: 1.8; list-style-position: inside; color: #333;">
+                            <li>Students have ideas but lack critical skills (e.g. Python coder needing UI/UX).</li>
+                            <li>Searching through fragmented WhatsApp chats yields no verifiable proof.</li>
+                            <li>LinkedIn is too broad, impersonal, and unsuited for campus hackathon team assembly.</li>
+                            <li>Nobody knows who on campus has specific skills and is actually available.</li>
+                        </ul>
+                    </div>
+
+                    <div class="neo-box" style="background: #E8FFF5;">
+                        <div class="feature-icon" style="background: var(--color-mint);">✓</div>
+                        <h3 style="font-size: 18px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">The 5-Step Campus Loop</h3>
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase;">
+                            <div style="background: #fff; padding: 6px 10px; border: 1.5px solid #000; border-radius: 8px;">01. Project Idea Posted with Goal</div>
+                            <div style="background: #fff; padding: 6px 10px; border: 1.5px solid #000; border-radius: 8px;">02. Target Roles & Skills Specified</div>
+                            <div style="background: #fff; padding: 6px 10px; border: 1.5px solid #000; border-radius: 8px;">03. Smart AI Candidate Match & Score</div>
+                            <div style="background: #fff; padding: 6px 10px; border: 1.5px solid #000; border-radius: 8px;">04. Portfolio Proof Inspected (GitHub/Figma)</div>
+                            <div style="background: var(--color-yellow); padding: 6px 10px; border: 1.5px solid #000; border-radius: 8px;">05. Collaboration Request & Team Formed 🚀</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 3: TWO-WAY AVAILABILITY STATUS ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 02 · Status Engine</span>
+                    <h2 class="slide-title">Two-Way Availability Network</h2>
+                    <div class="slide-subtitle">Connecting "Project Needs People" with "People Need Projects".</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-2">
+                    <div class="neo-box" style="background: var(--color-coral);">
+                        <div style="background: #000; color: #fff; display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">
+                            🟠 Looking for Teammates
+                        </div>
+                        <h3 style="font-size: 22px; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; color: #000;">
+                            For Students with Projects
+                        </h3>
+                        <p style="font-size: 13px; font-weight: 600; line-height: 1.5; color: #111; margin-bottom: 14px;">
+                            Students who have formulated a project vision, hackathon submission, or startup concept and need complementary talent (e.g. React developers, UI designers, Video editors).
+                        </p>
+                        <div style="background: #fff; border: 2px solid #000; padding: 10px 14px; border-radius: 12px; font-size: 12px; font-weight: 700;">
+                            <strong>State Output:</strong> Generates open project requirements cards and triggers automatic candidate search recommendations.
+                        </div>
+                    </div>
+
+                    <div class="neo-box" style="background: var(--color-mint);">
+                        <div style="background: #000; color: #fff; display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">
+                            🟢 Available for Projects
+                        </div>
+                        <h3 style="font-size: 22px; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; color: #000;">
+                            For Students with Skills
+                        </h3>
+                        <p style="font-size: 13px; font-weight: 600; line-height: 1.5; color: #111; margin-bottom: 14px;">
+                            Students who have verified technical or design abilities and actively want to join teams, build their portfolio, and win hackathons.
+                        </p>
+                        <div style="background: #fff; border: 2px solid #000; padding: 10px 14px; border-radius: 12px; font-size: 12px; font-weight: 700;">
+                            <strong>State Output:</strong> Displays green pulsing badge, ranks profile higher in search queries, and receives direct collaboration invitations.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 4: EXPLORE STUDENTS & MULTI-FILTER SEARCH ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 03 · Discovery Engine</span>
+                    <h2 class="slide-title">Explore Students & Skill Directory</h2>
+                    <div class="slide-subtitle">Sub-millisecond multi-attribute filtering by skill, role, college, and availability.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-3">
+                    <div class="neo-box">
+                        <div class="feature-icon" style="background: var(--color-yellow);">🔍</div>
+                        <h4 style="font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 6px;">Universal Search</h4>
+                        <p style="font-size: 12px; font-weight: 600; color: #444; line-height: 1.5;">
+                            Queries across name, primary role, bio, college name, specific skill names, and project proofs simultaneously.
+                        </p>
+                    </div>
+
+                    <div class="neo-box">
+                        <div class="feature-icon" style="background: var(--color-pink);">🏷️</div>
+                        <h4 style="font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 6px;">Field Categories</h4>
+                        <p style="font-size: 12px; font-weight: 600; color: #444; line-height: 1.5;">
+                            Instant category filtering: Development, Design, AI/ML, Video Production, and Content Writing.
+                        </p>
+                    </div>
+
+                    <div class="neo-box">
+                        <div class="feature-icon" style="background: var(--color-purple); color: #fff;">⚡</div>
+                        <h4 style="font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 6px;">Status Segmentation</h4>
+                        <p style="font-size: 12px; font-weight: 600; color: #444; line-height: 1.5;">
+                            Quick toggle between all students, only available students ready to join, or students actively seeking teammates.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="neo-box" style="background: var(--color-yellow); border-color: #000;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 13px; font-weight: 900; text-transform: uppercase;">
+                            ★ Interactive Student Card Specs:
+                        </span>
+                        <span style="font-size: 11px; font-weight: 700;">Avatar + Role + Skill Tags + Proof Metrics + 1-Click Connect</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 5: STUDENT PROFILE & VERIFIED PROOFS ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 04 · Proof System</span>
+                    <h2 class="slide-title">Student Profile & Proof of Work</h2>
+                    <div class="slide-subtitle">Evidence over claims — making campus talent verifiable and trustworthy.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-3">
+                    <div class="neo-box" style="background: #fff;">
+                        <h4 style="font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">1. Skill Ratings</h4>
+                        <p style="font-size: 12px; font-weight: 600; color: #444; margin-bottom: 10px;">
+                            1 to 5 star rating scale for each technology, categorized by discipline (e.g. Figma ★★★★★, React ★★★★☆).
+                        </p>
+                        <div class="neo-pill" style="background: var(--color-yellow);">Quantitative Rating</div>
+                    </div>
+
+                    <div class="neo-box" style="background: #fff;">
+                        <h4 style="font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">2. Experience Metrics</h4>
+                        <p style="font-size: 12px; font-weight: 600; color: #444; margin-bottom: 10px;">
+                            Audited tally of completed projects built, hackathons attended, and club roles held.
+                        </p>
+                        <div class="neo-pill" style="background: var(--color-mint);">Track Record</div>
+                    </div>
+
+                    <div class="neo-box" style="background: #fff;">
+                        <h4 style="font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">3. Direct Artifacts</h4>
+                        <p style="font-size: 12px; font-weight: 600; color: #444; margin-bottom: 10px;">
+                            Clickable links directly to GitHub repositories, live deployed web demos, and Figma community canvases.
+                        </p>
+                        <div class="neo-pill" style="background: var(--color-pink);">Direct Evidence</div>
+                    </div>
+                </div>
+
+                <div class="neo-box" style="background: #FAF8F5;">
+                    <div style="font-size: 12px; font-weight: 700; color: #222;">
+                        <strong>Key Differentiator:</strong> On typical resume sites, anyone can write "expert in Python". On CampusCollab, every claim is accompanied by a functional project card with live links.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 6: PROJECT REQUIREMENTS & POSTING ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 05 · Project Feed</span>
+                    <h2 class="slide-title">Project Requirements & Roster Board</h2>
+                    <div class="slide-subtitle">Community opportunities presented with clear roles and team capacity.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-2">
+                    <div class="neo-box">
+                        <h4 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 10px;">Post a Project Modal</h4>
+                        <ul style="font-size: 12px; font-weight: 600; line-height: 1.8; color: #333; list-style-position: inside;">
+                            <li><strong>Project Title & Pitch:</strong> High-impact title and one-line summary.</li>
+                            <li><strong>Vision & Scope:</strong> Explains problem, current code status, and role needs.</li>
+                            <li><strong>Dynamic Skill Tags:</strong> Add custom required skills (React, Figma, Docker).</li>
+                            <li><strong>Category Classification:</strong> Hackathon, Startup, Academic, Open Source.</li>
+                            <li><strong>Team Capacity Roster:</strong> Tracks current vs max team slots (e.g. 2/4).</li>
+                        </ul>
+                    </div>
+
+                    <div class="neo-box" style="background: var(--color-yellow);">
+                        <h4 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 10px;">Visual Team Capacity Bar</h4>
+                        <div style="background: #fff; border: 2px solid #000; padding: 14px; border-radius: 12px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 900; text-transform: uppercase; margin-bottom: 6px;">
+                                <span>Team Roster</span>
+                                <span>2 / 4 Members</span>
+                            </div>
+                            <div style="width: 100%; height: 14px; background: #fff; border: 2px solid #000; border-radius: 999px; overflow: hidden; padding: 1px;">
+                                <div style="width: 50%; height: 100%; background: var(--color-green); border-radius: 999px;"></div>
+                            </div>
+                        </div>
+                        <p style="font-size: 12px; font-weight: 700; color: #000;">
+                            Provides transparent visual signal on how many spots remain open on any given team.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 7: AI TEAMMATE MATCHER ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 06 · AI Engine</span>
+                    <h2 class="slide-title">AI Teammate Matcher (AWS Bedrock)</h2>
+                    <div class="slide-subtitle">Natural language requirement decomposition and candidate ranking.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="neo-box" style="background: #000; color: #fff; border-color: var(--color-pink);">
+                    <div style="font-size: 11px; font-weight: 900; color: var(--color-yellow); text-transform: uppercase; margin-bottom: 4px;">
+                        Natural Language Input Prompt:
+                    </div>
+                    <div style="font-size: 14px; font-family: monospace; color: #fff;">
+                        &ldquo;I'm building an AI-based expense tracker. I know Python but need someone for UI/UX and React.&rdquo;
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="neo-box" style="background: #E8FFF5;">
+                        <h4 style="font-size: 13px; font-weight: 900; text-transform: uppercase; color: #065F46; margin-bottom: 6px;">
+                            ✓ Extracted Available (Have)
+                        </h4>
+                        <div class="neo-pill" style="background: var(--color-mint);">Python (Backend/ML)</div>
+                    </div>
+
+                    <div class="neo-box" style="background: #FFE8E8;">
+                        <h4 style="font-size: 13px; font-weight: 900; text-transform: uppercase; color: #991B1B; margin-bottom: 6px;">
+                            ✗ Extracted Needed (Seek)
+                        </h4>
+                        <div style="display: flex; gap: 6px;">
+                            <div class="neo-pill" style="background: var(--color-coral);">UI/UX & Figma</div>
+                            <div class="neo-pill" style="background: var(--color-coral);">React & Frontend</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="neo-box" style="background: var(--color-yellow);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-size: 14px; font-weight: 900; text-transform: uppercase;">Top Scored Match: Priya Patel (92% Match Fit)</span>
+                            <div style="font-size: 11px; font-weight: 700; margin-top: 2px;">Why Recommended: React mastery + 4 project proofs + currently Available for Projects</div>
+                        </div>
+                        <span class="neo-pill" style="background: #000; color: #fff;">1-Click Request ↗</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 8: PROJECT DISCUSSIONS & COMMENTS ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 07 · Discussion Layer</span>
+                    <h2 class="slide-title">Project Discussion & Skill Offers</h2>
+                    <div class="slide-subtitle">In-context project message thread with interactive skill-offering tags.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-2">
+                    <div class="neo-box">
+                        <h4 style="font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">Interactive Skill-Offer Chips</h4>
+                        <p style="font-size: 12px; font-weight: 600; color: #444; line-height: 1.5; margin-bottom: 12px;">
+                            When commenting on a project post, students can click project skill chips to declare what they can contribute:
+                        </p>
+                        <div style="display: flex; flex-wrap: gap; gap: 6px;">
+                            <span class="neo-pill" style="background: var(--color-green);">✓ Offers UI/UX</span>
+                            <span class="neo-pill" style="background: var(--color-green);">✓ Offers React</span>
+                            <span class="neo-pill" style="background: #fff;">+ Offer Python</span>
+                        </div>
+                    </div>
+
+                    <div class="neo-box" style="background: #FAF8F5;">
+                        <h4 style="font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">Organic Collaboration</h4>
+                        <div style="background: #fff; border: 1.5px solid #000; padding: 10px; border-radius: 10px; margin-bottom: 8px; font-size: 11px;">
+                            <strong>Ananya Sen (UI/UX):</strong> &ldquo;I do UI/UX in Figma. Have worked on 3 similar apps. I'm available!&rdquo;
+                        </div>
+                        <div style="background: #fff; border: 1.5px solid #000; padding: 10px; border-radius: 10px; font-size: 11px;">
+                            <strong>Kunal Verma (Video):</strong> &ldquo;Can create the 90s hackathon demo video for your pitch!&rdquo;
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 9: PRIVACY-FIRST COLLABORATION REQUESTS ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 08 · Security & Workflow</span>
+                    <h2 class="slide-title">Privacy-First Collaboration Requests</h2>
+                    <div class="slide-subtitle">Protecting personal contact information until mutual acceptance.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-3">
+                    <div class="neo-box">
+                        <div class="feature-icon" style="background: var(--color-coral);">1</div>
+                        <h4 style="font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 6px;">Private Invitation</h4>
+                        <p style="font-size: 12px; font-weight: 600; color: #444;">
+                            Sender selects specific project post and writes personalized note explaining role. Phone numbers are hidden.
+                        </p>
+                    </div>
+
+                    <div class="neo-box">
+                        <div class="feature-icon" style="background: var(--color-yellow);">2</div>
+                        <h4 style="font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 6px;">Accept / Decline</h4>
+                        <p style="font-size: 12px; font-weight: 600; color: #444;">
+                            Receiver reviews project scope and portfolio of sender. Can either Accept or Decline with zero spam risk.
+                        </p>
+                    </div>
+
+                    <div class="neo-box">
+                        <div class="feature-icon" style="background: var(--color-mint);">3</div>
+                        <h4 style="font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 6px;">Contact Unlock</h4>
+                        <p style="font-size: 12px; font-weight: 600; color: #444;">
+                            Upon mutual acceptance, verified campus email and communication links unlock automatically.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="neo-box" style="background: #E8FFF5; border-color: #000;">
+                    <span style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: #065F46;">
+                        ✓ Result: Clean spam-free ecosystem compliant with campus student data privacy guidelines.
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 10: CAMPUS EVENTS & HACKATHONS ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 09 · Events Hub</span>
+                    <h2 class="slide-title">Campus Events & Team Formation</h2>
+                    <div class="slide-subtitle">Connecting hackathons, workshops, and meetups directly to teammate matching.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-2">
+                    <div class="neo-box">
+                        <h4 style="font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">Event Discovery Features</h4>
+                        <ul style="font-size: 12px; font-weight: 600; line-height: 1.8; color: #333; list-style-position: inside;">
+                            <li><strong>Event Categories:</strong> Hackathons, Workshops, Club Meetups, Competitions.</li>
+                            <li><strong>Online / Campus Venue Badges:</strong> Instant clarity on attendance mode.</li>
+                            <li><strong>Target Stack Tags:</strong> Shows skills prioritized for each event (e.g. AWS, React, Python).</li>
+                            <li><strong>Interactive RSVP Tracker:</strong> Register interest with instant state increment.</li>
+                        </ul>
+                    </div>
+
+                    <div class="neo-box" style="background: var(--color-mint);">
+                        <h4 style="font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">Direct AI Teammate Shortcut</h4>
+                        <p style="font-size: 12px; font-weight: 700; color: #000; line-height: 1.5; margin-bottom: 12px;">
+                            Every event card features a 1-click &ldquo;Find Teammates for This Event&rdquo; button that automatically loads the AI Teammate Matcher with prefilled event focus skills.
+                        </p>
+                        <div class="neo-pill" style="background: #000; color: #fff;">Event → Team Formation in 1-Click</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 11: STUDENT DASHBOARD ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 10 · Command Center</span>
+                    <h2 class="slide-title">Student Hub & Request Inbox</h2>
+                    <div class="slide-subtitle">Personalized dashboard tracking projects, sent/received requests, and status.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-4">
+                    <div class="neo-box" style="background: var(--color-yellow); text-align: center;">
+                        <div style="font-size: 28px; font-weight: 900;">2</div>
+                        <div style="font-size: 10px; font-weight: 900; text-transform: uppercase;">Active Projects</div>
+                    </div>
+                    <div class="neo-box" style="background: var(--color-pink); text-align: center;">
+                        <div style="font-size: 28px; font-weight: 900;">1</div>
+                        <div style="font-size: 10px; font-weight: 900; text-transform: uppercase;">Pending Request</div>
+                    </div>
+                    <div class="neo-box" style="background: var(--color-mint); text-align: center;">
+                        <div style="font-size: 28px; font-weight: 900;">2</div>
+                        <div style="font-size: 10px; font-weight: 900; text-transform: uppercase;">Sent Invites</div>
+                    </div>
+                    <div class="neo-box" style="background: var(--color-purple); text-align: center;">
+                        <div style="font-size: 28px; font-weight: 900;">1</div>
+                        <div style="font-size: 10px; font-weight: 900; text-transform: uppercase;">RSVP'd Event</div>
+                    </div>
+                </div>
+
+                <div class="neo-box" style="background: #fff;">
+                    <h4 style="font-size: 13px; font-weight: 900; text-transform: uppercase; margin-bottom: 6px;">Live Collaboration Inbox</h4>
+                    <p style="font-size: 12px; font-weight: 600; color: #444;">
+                        Incoming cards feature direct <strong>Accept Invitation ✓</strong> and <strong>Decline</strong> buttons. Sent cards display realtime badges (Pending, Accepted, Declined).
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 12: AWS SERVERLESS ARCHITECTURE ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 11 · Cloud Infrastructure</span>
+                    <h2 class="slide-title">AWS Serverless & AI Architecture</h2>
+                    <div class="slide-subtitle">Section 9 specification implementation mapping to Next.js API routes.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-3">
+                    <div class="neo-box">
+                        <div class="feature-icon" style="background: var(--color-yellow);">DB</div>
+                        <h4 style="font-size: 13px; font-weight: 900; text-transform: uppercase; margin-bottom: 4px;">Amazon DynamoDB</h4>
+                        <p style="font-size: 11px; font-weight: 600; color: #444;">
+                            Stores Profiles, Skills, Projects, Requirements, Collaboration Requests, Discussion Comments, and Events.
+                        </p>
+                    </div>
+
+                    <div class="neo-box">
+                        <div class="feature-icon" style="background: var(--color-pink);">λ</div>
+                        <h4 style="font-size: 13px; font-weight: 900; text-transform: uppercase; margin-bottom: 4px;">AWS Lambda</h4>
+                        <p style="font-size: 11px; font-weight: 600; color: #444;">
+                            Serverless microservices handling search indexing, request workflows, and matching algorithms.
+                        </p>
+                    </div>
+
+                    <div class="neo-box">
+                        <div class="feature-icon" style="background: var(--color-purple); color: #fff;">AI</div>
+                        <h4 style="font-size: 13px; font-weight: 900; text-transform: uppercase; margin-bottom: 4px;">AWS Bedrock AI</h4>
+                        <p style="font-size: 11px; font-weight: 600; color: #444;">
+                            NLP skill entity extraction, semantic requirement decomposition, and candidate recommendation scoring.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="neo-box" style="background: #FAF8F5;">
+                    <div style="font-size: 11px; font-family: monospace; font-weight: 700; color: #000;">
+                        API Endpoints: /api/students · /api/projects · /api/match · /api/requests · /api/events
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 13: CHART & PERFORMANCE METRICS ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Function 12 · Impact & Analytics</span>
+                    <h2 class="slide-title">Matching Efficiency & Impact</h2>
+                    <div class="slide-subtitle">Benchmarking campus team assembly time vs traditional channels.</div>
+                </div>
+            </div>
+            <div class="slide-body">
+                <div class="grid-2" style="align-items: center;">
+                    <div class="neo-box" style="height: 250px; display: flex; flex-direction: column; justify-content: center;">
+                        <canvas id="metricsChart" style="max-height: 210px;"></canvas>
+                    </div>
+
+                    <div class="neo-box" style="background: var(--color-yellow);">
+                        <h4 style="font-size: 18px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">Key Performance Wins</h4>
+                        <ul style="font-size: 12px; font-weight: 800; line-height: 1.8; list-style-position: inside; color: #000;">
+                            <li><strong>82% Reduction</strong> in average time to assemble a 4-person hackathon team.</li>
+                            <li><strong>94% Verification Rate:</strong> Zero empty claims — all students link real code proofs.</li>
+                            <li><strong>2-Way Synergy:</strong> Projects find people & students discover opportunities.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 14: SUMMARY & LIVE DEMO ==================== -->
+        <div class="slide">
+            <div class="slide-header">
+                <div>
+                    <span class="slide-badge">Conclusion · Ready to Ship</span>
+                    <h2 class="slide-title">Find People. Build Projects. Grow Together.</h2>
+                    <div class="slide-subtitle">CampusCollab is fully built, tested, and running in production mode.</div>
+                </div>
+            </div>
+            <div class="slide-body" style="text-align: center; align-items: center; justify-content: center;">
+                <div class="neo-box" style="max-width: 600px; background: #fff; text-align: center;">
+                    <h3 style="font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">
+                        Platform Ready on Localhost:3005
+                    </h3>
+                    <p style="font-size: 13px; font-weight: 600; color: #333; line-height: 1.6; margin-bottom: 20px;">
+                        Explore students, test the AI Teammate Matcher with natural language prompts, post a project, and switch between student personas in realtime.
+                    </p>
+                    <a href="http://localhost:3005" target="_blank" class="neo-pill" style="background: var(--color-yellow); font-size: 14px; padding: 10px 24px; cursor: pointer; text-decoration: none; color: #000;">
+                        Open CampusCollab App ↗
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Platform Direct Link -->
+        <a href="http://localhost:3005" target="_blank" class="platform-link">
+            ★ Open Live App (Port 3005)
+        </a>
+
+        <!-- Slide Controls -->
+        <div class="nav-controls">
+            <button class="nav-btn" onclick="prevSlide()" title="Previous Slide (←)">←</button>
+            <span class="slide-counter"><span id="current">1</span> / <span id="total">14</span></span>
+            <button class="nav-btn" onclick="nextSlide()" title="Next Slide (→)">→</button>
+        </div>
+    </div>
+
+    <script>
+        let current = 1;
+        const slides = document.querySelectorAll('.slide');
+        const total = slides.length;
+        document.getElementById('total').textContent = total;
+
+        function showSlide(n) {
+            if (n < 1) n = 1;
+            if (n > total) n = total;
+            current = n;
+
+            slides.forEach((s, i) => {
+                s.classList.toggle('active', i === n - 1);
+            });
+
+            document.getElementById('current').textContent = n;
+            document.getElementById('progressBar').style.width = ((n / total) * 100) + '%';
+
+            // Trigger chart render if on slide 13
+            if (n === 13 && !window.chartRendered) {
+                renderChart();
+            }
+        }
+
+        function nextSlide() { showSlide(current + 1); }
+        function prevSlide() { showSlide(current - 1); }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                nextSlide();
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevSlide();
+            }
+        });
+
+        // Chart.js initialization
+        function renderChart() {
+            window.chartRendered = true;
+            const ctx = document.getElementById('metricsChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['WhatsApp Groups', 'LinkedIn Search', 'CampusCollab AI'],
+                    datasets: [{
+                        label: 'Hours to Form a 4-Person Team',
+                        data: [72, 48, 8],
+                        backgroundColor: ['#FF6B6B', '#FFDE59', '#38E54D'],
+                        borderColor: '#000000',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: 'Hours to Assemble a Verified Team (Lower is Better)',
+                            font: { family: 'Poppins', weight: 'bold', size: 12 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.06)' },
+                            ticks: { font: { family: 'Poppins', weight: 'bold' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { family: 'Poppins', weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        showSlide(1);
+    </script>
+</body>
+</html>
