@@ -12,10 +12,9 @@ import {
   Sparkles,
   Send,
   Heart,
-  Share2,
   Calendar,
   CheckCircle,
-  Tag
+  ArrowUpRight
 } from 'lucide-react';
 
 export default function ProjectDetailsPage() {
@@ -34,15 +33,15 @@ export default function ProjectDetailsPage() {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-[#F5F1E6] flex items-center justify-center p-4">
-        <div className="bg-white border border-[#E8E2D5] rounded-3xl p-8 max-w-md text-center space-y-4">
-          <h2 className="text-xl font-bold text-[#0F3D2E]">Project Not Found</h2>
-          <p className="text-xs text-stone-500">
+      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4">
+        <div className="bg-white border-[2.5px] border-black rounded-2xl p-8 max-w-md text-center space-y-4 shadow-[5px_5px_0px_0px_#000]">
+          <h2 className="text-xl font-black uppercase text-black">Project Not Found</h2>
+          <p className="text-xs font-semibold text-stone-600">
             This project post could not be found or has concluded.
           </p>
           <Link
             href="/projects"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-white bg-[#0F3D2E] px-5 py-2.5 rounded-full"
+            className="inline-flex items-center gap-2 text-xs font-black uppercase text-white bg-black px-5 py-2.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Projects</span>
@@ -52,7 +51,6 @@ export default function ProjectDetailsPage() {
     );
   }
 
-  // Find owner student profile if on platform
   const ownerStudent = allStudents.find((s) => s.id === project.ownerId);
 
   const handleLike = () => {
@@ -85,81 +83,80 @@ export default function ProjectDetailsPage() {
   const isOwner = project.ownerId === currentUser.id;
 
   return (
-    <div className="min-h-screen bg-[#F5F1E6] py-10 md:py-16">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="min-h-screen bg-[#FAF8F5] py-10 md:py-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Back Link */}
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-[#0F3D2E] transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-black bg-white px-3 py-1.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#FFDE59] transition-all cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Feed</span>
         </button>
 
         {/* Project Header Card */}
-        <div className="bg-white border border-[#E8E2D5] rounded-3xl p-6 sm:p-10 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-100">
+        <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 sm:p-10 shadow-[6px_6px_0px_0px_#000] space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b-2 border-black">
             {/* Creator Info */}
             <div className="flex items-center gap-3.5">
               <img
                 src={project.ownerAvatar}
                 alt={project.ownerName}
-                className="w-12 h-12 rounded-2xl object-cover ring-2 ring-stone-200"
+                className="w-12 h-12 rounded-xl object-cover border-2 border-black shadow-[2px_2px_0px_0px_#000]"
               />
               <div>
-                <div className="font-bold text-base text-[#0F3D2E]">
+                <div className="font-black text-base text-black uppercase">
                   {project.ownerName}
                 </div>
-                <div className="text-xs text-stone-500">
+                <div className="text-xs text-stone-600 font-bold">
                   {project.ownerCollege} · Posted {project.createdAt}
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full bg-[#D9C3A5]/40 text-[#8B6F47] border border-[#D9C3A5]">
+              <span className="text-xs font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full bg-[#FFDE59] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                 {project.type}
               </span>
               <button
                 onClick={handleLike}
-                className={`p-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold ${
+                className={`px-3 py-1.5 rounded-xl border-2 border-black font-black text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
                   hasLiked
-                    ? 'border-red-200 bg-red-50 text-red-600'
-                    : 'border-stone-200 hover:bg-stone-50 text-stone-600'
+                    ? 'bg-[#FF6B6B] text-black shadow-[2px_2px_0px_0px_#000]'
+                    : 'bg-white hover:bg-stone-100 shadow-[2px_2px_0px_0px_#000]'
                 }`}
               >
-                <Heart className={`w-4 h-4 ${hasLiked ? 'fill-red-600' : ''}`} />
-                <span>{likes}</span>
+                <Heart className={`w-4 h-4 ${hasLiked ? 'fill-black text-black' : ''}`} />
+                <span>{likes} Likes</span>
               </button>
             </div>
           </div>
 
           {/* Project Title & Pitch */}
-          <div className="space-y-3">
-            <h1 className="text-2xl sm:text-4xl font-bold text-[#0F3D2E] tracking-tight">
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-4xl font-black uppercase tracking-tight text-black">
               {project.title}
             </h1>
-            <p className="text-sm sm:text-base text-[#8B6F47] font-medium leading-relaxed">
+            <p className="text-sm sm:text-base font-bold text-stone-800 leading-relaxed">
               {project.tagline}
             </p>
           </div>
 
           {/* Description */}
-          <div className="prose prose-stone text-sm text-stone-700 leading-relaxed max-w-none pt-2">
+          <div className="text-sm font-medium text-stone-800 leading-relaxed max-w-none pt-1">
             <p>{project.description}</p>
           </div>
 
           {/* Roles / Skills Needed */}
-          <div className="pt-4 border-t border-stone-100">
-            <div className="text-xs font-bold uppercase tracking-wider text-[#8B6F47] mb-2.5 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#2E7058]" />
-              Required Skills & Roles
+          <div className="pt-4 border-t-2 border-black">
+            <div className="text-[10px] font-black uppercase tracking-wider text-black mb-2 flex items-center gap-1.5">
+              <span>★</span> Required Skills & Roles
             </div>
             <div className="flex flex-wrap gap-2">
               {project.requiredSkills.map((skill) => (
                 <span
                   key={skill}
-                  className="bg-[#2E7058]/10 text-[#0F3D2E] border border-[#2E7058]/20 text-xs font-bold px-3.5 py-1.5 rounded-xl"
+                  className="bg-[#FFDE59] text-black border-2 border-black text-xs font-black uppercase px-3 py-1 rounded-xl shadow-[2px_2px_0px_0px_#000]"
                 >
                   {skill}
                 </span>
@@ -168,16 +165,16 @@ export default function ProjectDetailsPage() {
           </div>
 
           {/* Team Capacity Progress Bar */}
-          <div className="bg-[#F5F1E6] rounded-2xl p-5 border border-[#E8E2D5] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-[#FAF8F5] rounded-xl p-5 border-2 border-black shadow-[3px_3px_0px_0px_#000] flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[#2E7058] shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center justify-center font-black">
                 <Users className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-[#0F3D2E]">
+                <div className="text-xs font-black uppercase text-black">
                   Team Slots: {project.currentMembers} of {project.maxMembers} Filled
                 </div>
-                <div className="text-[11px] text-stone-500">
+                <div className="text-[11px] font-bold text-stone-600">
                   {project.maxMembers - project.currentMembers} collaborator spot(s) remaining
                 </div>
               </div>
@@ -186,42 +183,38 @@ export default function ProjectDetailsPage() {
             {!isOwner && ownerStudent && (
               <button
                 onClick={() => setShowCollabModal(true)}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#2E7058] hover:bg-[#245946] text-white font-semibold text-xs px-6 py-3 rounded-full shadow-sm hover:shadow transition-all cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-black hover:bg-[#FF70A6] hover:text-black text-white font-black text-xs uppercase tracking-wider px-6 py-3 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
               >
-                <Send className="w-3.5 h-3.5 text-[#A3C9AB]" />
                 <span>Send Collaboration Request</span>
+                <ArrowUpRight className="w-4 h-4" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Discussion / Comments Section (Feature 6 from UI/UX Spec) */}
-        <div id="comments" className="bg-white border border-[#E8E2D5] rounded-3xl p-6 sm:p-10 shadow-sm space-y-6">
-          <div className="flex items-center justify-between">
+        {/* Discussion / Comments Section (Neo-Brutalism speech cards) */}
+        <div id="comments" className="bg-white border-[2.5px] border-black rounded-2xl p-6 sm:p-10 shadow-[6px_6px_0px_0px_#000] space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-black pb-4">
             <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-[#2E7058]" />
-              <h2 className="text-xl font-bold text-[#0F3D2E]">
-                Project Discussion & Offers
+              <MessageSquare className="w-5 h-5 text-black" />
+              <h2 className="text-xl font-black uppercase text-black tracking-tight">
+                Discussion & Skill Offers
               </h2>
             </div>
-            <span className="text-xs font-semibold text-stone-500 bg-[#F5F1E6] px-3 py-1 rounded-full">
-              {project.comments.length} comment{project.comments.length === 1 ? '' : 's'}
+            <span className="text-xs font-black bg-[#FFDE59] text-black px-3 py-1 rounded-full border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000]">
+              {project.comments.length} Comments
             </span>
           </div>
 
-          <p className="text-xs text-stone-500 leading-relaxed -mt-2">
-            Interested in contributing? Leave a comment offering your skills or ask questions directly to the project lead.
-          </p>
-
           {/* Add Comment Form */}
-          <form onSubmit={handlePostComment} className="bg-[#FAF7F0] border border-[#D9C3A5] rounded-2xl p-4 sm:p-5 space-y-4">
+          <form onSubmit={handlePostComment} className="bg-[#FAF8F5] border-2 border-black rounded-2xl p-5 space-y-4 shadow-[3px_3px_0px_0px_#000]">
             <div className="flex items-center gap-3">
               <img
                 src={currentUser.avatar}
                 alt={currentUser.name}
-                className="w-8 h-8 rounded-full object-cover ring-1 ring-[#A3C9AB]"
+                className="w-8 h-8 rounded-lg object-cover border border-black"
               />
-              <div className="text-xs font-semibold text-[#0F3D2E]">
+              <div className="text-xs font-black uppercase text-black">
                 Commenting as <span className="underline">{currentUser.name}</span> ({currentUser.primaryRole})
               </div>
             </div>
@@ -230,14 +223,14 @@ export default function ProjectDetailsPage() {
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               rows={3}
-              placeholder="e.g. I know React and UI/UX in Figma. I have built 3 similar projects and would love to help!"
-              className="w-full bg-white border border-[#D9C3A5] rounded-xl p-3.5 text-xs sm:text-sm text-[#17231D] focus:outline-none focus:ring-2 focus:ring-[#2E7058] placeholder:text-stone-400"
+              placeholder="e.g. I do React & UI/UX in Figma. I have built 3 similar projects and would love to collaborate!"
+              className="w-full bg-white border-2 border-black rounded-xl p-3 text-xs sm:text-sm font-medium text-black focus:outline-none shadow-[2px_2px_0px_0px_#000] placeholder:text-stone-400"
               required
             />
 
             {/* Quick tag offering skills */}
             <div>
-              <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-2">
+              <div className="text-[10px] font-black uppercase tracking-wider text-black mb-2">
                 Tag skills you can contribute:
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -248,10 +241,10 @@ export default function ProjectDetailsPage() {
                       key={sk}
                       type="button"
                       onClick={() => handleToggleOfferSkill(sk)}
-                      className={`text-xs px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                      className={`text-xs px-3 py-1 rounded-lg border-2 border-black transition-all cursor-pointer font-bold ${
                         isSelected
-                          ? 'bg-[#2E7058] text-white border-[#2E7058] font-bold'
-                          : 'bg-white text-stone-700 border-[#D9C3A5] hover:bg-[#F5F1E6]'
+                          ? 'bg-[#38E54D] text-black shadow-[2px_2px_0px_0px_#000]'
+                          : 'bg-white text-black hover:bg-[#FFDE59] shadow-[1.5px_1.5px_0px_0px_#000]'
                       }`}
                     >
                       {isSelected ? `✓ Offering ${sk}` : `+ Offer ${sk}`}
@@ -264,10 +257,10 @@ export default function ProjectDetailsPage() {
             <div className="flex justify-end pt-1">
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 bg-[#0F3D2E] hover:bg-[#1A4B3A] text-white font-semibold text-xs px-5 py-2.5 rounded-full shadow-sm hover:shadow transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 bg-black hover:bg-[#FFDE59] hover:text-black text-white font-black text-xs uppercase px-5 py-2.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
               >
-                <span>Post Comment</span>
-                <Send className="w-3 h-3 text-[#A3C9AB]" />
+                <span>Post Offer</span>
+                <Send className="w-3.5 h-3.5" />
               </button>
             </div>
           </form>
@@ -278,20 +271,20 @@ export default function ProjectDetailsPage() {
               project.comments.map((cmt) => (
                 <div
                   key={cmt.id}
-                  className="p-4 sm:p-5 rounded-2xl bg-[#F5F1E6]/60 border border-[#E8E2D5] space-y-2.5"
+                  className="p-5 rounded-xl bg-[#FAF8F5] border-2 border-black shadow-[3px_3px_0px_0px_#000] space-y-2.5"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <img
                         src={cmt.authorAvatar}
                         alt={cmt.authorName}
-                        className="w-9 h-9 rounded-xl object-cover ring-1 ring-stone-200"
+                        className="w-9 h-9 rounded-lg object-cover border border-black"
                       />
                       <div>
-                        <div className="text-xs font-bold text-[#0F3D2E]">
+                        <div className="text-xs font-black uppercase text-black">
                           {cmt.authorName}
                         </div>
-                        <div className="text-[11px] text-stone-500">
+                        <div className="text-[11px] text-stone-600 font-bold">
                           {cmt.authorRole} · {cmt.createdAt}
                         </div>
                       </div>
@@ -302,7 +295,7 @@ export default function ProjectDetailsPage() {
                         {cmt.offeringSkills.map((sk) => (
                           <span
                             key={sk}
-                            className="bg-[#10B981]/15 text-[#065F46] border border-[#10B981]/30 text-[10px] font-bold px-2 py-0.5 rounded-md"
+                            className="bg-[#38E54D] text-black border border-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-[1px_1px_0px_0px_#000]"
                           >
                             ✓ Offers {sk}
                           </span>
@@ -311,13 +304,13 @@ export default function ProjectDetailsPage() {
                     )}
                   </div>
 
-                  <p className="text-xs sm:text-sm text-stone-700 leading-relaxed pl-12">
+                  <p className="text-xs sm:text-sm font-semibold text-stone-800 leading-relaxed pl-12">
                     {cmt.content}
                   </p>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-xs text-stone-400">
+              <div className="text-center py-8 text-xs font-bold text-stone-500">
                 No comments yet. Be the first to express interest or ask a question!
               </div>
             )}

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ProjectType } from '@/types';
-import { X, Plus, Sparkles, Wand2 } from 'lucide-react';
+import { X, Plus, Sparkles, Wand2, ArrowUpRight } from 'lucide-react';
 
 interface CreateProjectModalProps {
   onClose: () => void;
@@ -34,7 +34,6 @@ export default function CreateProjectModal({ onClose, onCreated }: CreateProject
     setRequiredSkills(requiredSkills.filter((s) => s !== skillToRemove));
   };
 
-  // AI-Assisted Skill Extraction from Description
   const handleAiExtractSkills = () => {
     if (!description.trim()) {
       alert('Please enter a description first for AI skill extraction.');
@@ -67,7 +66,7 @@ export default function CreateProjectModal({ onClose, onCreated }: CreateProject
 
       setRequiredSkills(detected);
       setIsAiParsing(false);
-    }, 600);
+    }, 500);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -96,29 +95,30 @@ export default function CreateProjectModal({ onClose, onCreated }: CreateProject
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto">
-      <div className="bg-[#F5F1E6] rounded-3xl max-w-xl w-full p-6 sm:p-8 border border-[#D9C3A5] shadow-2xl relative my-8">
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-200/60 transition-colors cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="mb-6">
-          <div className="text-xs font-bold uppercase tracking-wider text-[#8B6F47]">
-            Build Together
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-100 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-xl w-full border-[3px] border-black shadow-[8px_8px_0px_0px_#000] overflow-hidden relative my-8">
+        {/* Pink Header Block (Matching Gumroad style) */}
+        <div className="bg-[#FF70A6] border-b-2 border-black p-5 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-wider text-black">
+              ★ CAMPUS PROJECT BOARD
+            </div>
+            <h2 className="text-xl font-black uppercase tracking-tight text-black mt-0.5">
+              Post a Project Requirement
+            </h2>
           </div>
-          <h2 className="text-2xl font-bold text-[#0F3D2E] mt-0.5">Post a Project</h2>
-          <p className="text-xs text-stone-600 mt-1">
-            Share your idea and find skilled students from your campus community.
-          </p>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center justify-center text-black hover:bg-[#FF6B6B] transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Project Title */}
+        <form onSubmit={handleSubmit} className="p-6 sm:p-7 space-y-4">
+          {/* Title */}
           <div>
-            <label className="block text-xs font-bold text-[#0F3D2E] uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
               Project Title *
             </label>
             <input
@@ -126,39 +126,39 @@ export default function CreateProjectModal({ onClose, onCreated }: CreateProject
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. AI Based Expense Tracker"
-              className="w-full bg-white border border-[#D9C3A5] rounded-xl px-4 py-2.5 text-sm text-[#17231D] focus:outline-none focus:ring-2 focus:ring-[#2E7058]"
+              className="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-xs font-bold text-black focus:outline-none shadow-[2px_2px_0px_0px_#000]"
               required
             />
           </div>
 
           {/* Tagline */}
           <div>
-            <label className="block text-xs font-bold text-[#0F3D2E] uppercase tracking-wider mb-1.5">
-              One-line Pitch / Tagline
+            <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+              Tagline / One-Line Pitch
             </label>
             <input
               type="text"
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
               placeholder="e.g. Smart receipt scanner and budget companion for students"
-              className="w-full bg-white border border-[#D9C3A5] rounded-xl px-4 py-2.5 text-sm text-[#17231D] focus:outline-none focus:ring-2 focus:ring-[#2E7058]"
+              className="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-xs font-medium text-black focus:outline-none shadow-[2px_2px_0px_0px_#000]"
             />
           </div>
 
-          {/* Project Description + AI Extraction Button */}
+          {/* Description + AI Assistant Button */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-[#0F3D2E] uppercase tracking-wider">
+              <label className="block text-xs font-black text-black uppercase tracking-wider">
                 Description & Vision *
               </label>
               <button
                 type="button"
                 onClick={handleAiExtractSkills}
                 disabled={isAiParsing}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2E7058] hover:text-[#0F3D2E] bg-white px-2.5 py-1 rounded-full border border-[#D9C3A5] shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-black bg-[#FFDE59] px-3 py-1 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
               >
                 <Wand2 className={`w-3 h-3 ${isAiParsing ? 'animate-spin' : ''}`} />
-                <span>{isAiParsing ? 'Analyzing...' : 'AI Auto-Detect Skills'}</span>
+                <span>{isAiParsing ? 'Analyzing...' : 'AI Auto-Detect'}</span>
               </button>
             </div>
             <textarea
@@ -166,27 +166,27 @@ export default function CreateProjectModal({ onClose, onCreated }: CreateProject
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="Explain what problem you're solving, what is currently built, and what roles you need to fill..."
-              className="w-full bg-white border border-[#D9C3A5] rounded-xl p-3.5 text-sm text-[#17231D] focus:outline-none focus:ring-2 focus:ring-[#2E7058]"
+              className="w-full bg-white border-2 border-black rounded-xl p-3.5 text-xs font-medium text-black focus:outline-none shadow-[2px_2px_0px_0px_#000]"
               required
             />
           </div>
 
-          {/* Required Skills Badges & Input */}
+          {/* Required Skills Badges */}
           <div>
-            <label className="block text-xs font-bold text-[#0F3D2E] uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
               Required Skills & Roles
             </label>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {requiredSkills.map((skill) => (
                 <span
                   key={skill}
-                  className="bg-[#2E7058] text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm"
+                  className="bg-[#FFDE59] text-black text-xs font-black px-3 py-1 rounded-lg border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000] flex items-center gap-1.5"
                 >
                   <span>{skill}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveSkill(skill)}
-                    className="hover:text-red-200 cursor-pointer"
+                    className="hover:text-red-700 cursor-pointer font-black"
                   >
                     ×
                   </button>
@@ -204,29 +204,29 @@ export default function CreateProjectModal({ onClose, onCreated }: CreateProject
                     handleAddSkill();
                   }
                 }}
-                placeholder="Type a skill (e.g. Figma, React, Python) and press Enter"
-                className="flex-1 bg-white border border-[#D9C3A5] rounded-xl px-4 py-2 text-xs text-[#17231D] focus:outline-none focus:ring-2 focus:ring-[#2E7058]"
+                placeholder="Type a skill and press Enter"
+                className="flex-1 bg-white border-2 border-black rounded-xl px-4 py-2 text-xs font-bold text-black focus:outline-none shadow-[2px_2px_0px_0px_#000]"
               />
               <button
                 type="button"
                 onClick={handleAddSkill}
-                className="bg-[#2E7058] hover:bg-[#245946] text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                className="bg-black text-white hover:bg-[#FFDE59] hover:text-black px-4 py-2 rounded-xl text-xs font-black uppercase border-2 border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer"
               >
                 + Add
               </button>
             </div>
           </div>
 
-          {/* Project Type & Team Size */}
+          {/* Project Type & Team Capacity */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-[#0F3D2E] uppercase tracking-wider mb-1.5">
-                Project Category
+              <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+                Category
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as ProjectType)}
-                className="w-full bg-white border border-[#D9C3A5] rounded-xl px-3.5 py-2.5 text-xs text-[#0F3D2E] font-medium focus:outline-none focus:ring-2 focus:ring-[#2E7058]"
+                className="w-full bg-white border-2 border-black rounded-xl px-3.5 py-2 text-xs font-bold text-black focus:outline-none shadow-[2px_2px_0px_0px_#000]"
               >
                 <option value="Hackathon">Hackathon</option>
                 <option value="Startup">Startup</option>
@@ -237,7 +237,7 @@ export default function CreateProjectModal({ onClose, onCreated }: CreateProject
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#0F3D2E] uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
                 Team Size (Current / Max)
               </label>
               <div className="flex items-center gap-2">
@@ -247,36 +247,36 @@ export default function CreateProjectModal({ onClose, onCreated }: CreateProject
                   max="10"
                   value={currentMembers}
                   onChange={(e) => setCurrentMembers(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-20 bg-white border border-[#D9C3A5] rounded-xl px-3 py-2 text-xs text-center text-[#17231D]"
+                  className="w-16 bg-white border-2 border-black rounded-xl px-2 py-1.5 text-xs font-black text-center text-black shadow-[1.5px_1.5px_0px_0px_#000]"
                 />
-                <span className="text-stone-500 font-bold">/</span>
+                <span className="text-black font-black">/</span>
                 <input
                   type="number"
                   min={currentMembers}
                   max="12"
                   value={maxMembers}
                   onChange={(e) => setMaxMembers(Math.max(currentMembers, parseInt(e.target.value) || currentMembers))}
-                  className="w-20 bg-white border border-[#D9C3A5] rounded-xl px-3 py-2 text-xs text-center text-[#17231D]"
+                  className="w-16 bg-white border-2 border-black rounded-xl px-2 py-1.5 text-xs font-black text-center text-black shadow-[1.5px_1.5px_0px_0px_#000]"
                 />
-                <span className="text-xs text-stone-500">Members</span>
+                <span className="text-xs font-bold text-stone-600 uppercase">Members</span>
               </div>
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-3 pt-4 border-t border-[#D9C3A5]">
+          <div className="flex items-center gap-3 pt-3 border-t-2 border-black">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 text-xs font-semibold text-stone-700 bg-stone-200/80 hover:bg-stone-300 rounded-full transition-colors cursor-pointer"
+              className="flex-1 py-2.5 text-xs font-black uppercase text-black bg-white hover:bg-stone-100 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 text-xs font-semibold text-white bg-[#0F3D2E] hover:bg-[#1A4B3A] rounded-full shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="flex-1 py-2.5 text-xs font-black uppercase text-white bg-black hover:bg-[#FFDE59] hover:text-black rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Plus className="w-4 h-4 text-[#A3C9AB]" />
+              <Plus className="w-4 h-4" />
               <span>Post Project</span>
             </button>
           </div>

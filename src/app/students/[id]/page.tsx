@@ -15,7 +15,8 @@ import {
   Star,
   CheckCircle2,
   Mail,
-  Code2
+  Code2,
+  ArrowUpRight
 } from 'lucide-react';
 
 function GithubIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -30,7 +31,7 @@ function FigmaIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 38 57" fill="currentColor">
       <path fill="#EA580C" d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z"/>
-      <path fill="#0F3D2E" d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z"/>
+      <path fill="#000000" d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z"/>
       <path fill="#2E7058" d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z"/>
       <path fill="#8B6F47" d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z"/>
       <path fill="#A3C9AB" d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z"/>
@@ -49,18 +50,18 @@ export default function StudentProfilePage() {
 
   if (!student) {
     return (
-      <div className="min-h-screen bg-[#F5F1E6] flex items-center justify-center p-4">
-        <div className="bg-white border border-[#E8E2D5] rounded-3xl p-8 max-w-md text-center space-y-4">
-          <h2 className="text-xl font-bold text-[#0F3D2E]">Student Profile Not Found</h2>
-          <p className="text-xs text-stone-500">
-            The student profile you are trying to view does not exist or may have been removed.
+      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4">
+        <div className="bg-white border-[2.5px] border-black rounded-2xl p-8 max-w-md text-center space-y-4 shadow-[5px_5px_0px_0px_#000]">
+          <h2 className="text-xl font-black uppercase text-black">Profile Not Found</h2>
+          <p className="text-xs font-medium text-stone-600">
+            This student profile does not exist or may have been removed.
           </p>
           <Link
             href="/students"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-white bg-[#0F3D2E] px-5 py-2.5 rounded-full"
+            className="inline-flex items-center gap-2 text-xs font-black uppercase text-white bg-black px-5 py-2.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Students</span>
+            <span>Back to Directory</span>
           </Link>
         </div>
       </div>
@@ -70,40 +71,39 @@ export default function StudentProfilePage() {
   const isSelf = student.id === currentUser.id;
 
   return (
-    <div className="min-h-screen bg-[#F5F1E6] py-10 md:py-16">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="min-h-screen bg-[#FAF8F5] py-10 md:py-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Back Link */}
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-[#0F3D2E] transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-black bg-white px-3 py-1.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#FFDE59] transition-all cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back</span>
         </button>
 
         {/* Profile Header Card */}
-        <div className="bg-white border border-[#E8E2D5] rounded-3xl p-6 sm:p-10 shadow-sm relative overflow-hidden">
-          {/* Subtle nature corner gradient */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#A3C9AB]/20 via-[#D9C3A5]/10 to-transparent rounded-bl-full pointer-events-none"></div>
-
-          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 sm:p-10 shadow-[6px_6px_0px_0px_#000] relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <img
                 src={student.avatar}
                 alt={student.name}
-                className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover ring-4 ring-[#F5F1E6] shadow-md"
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-[2.5px] border-black shadow-[4px_4px_0px_0px_#000]"
               />
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#0F3D2E]">
+                  <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black">
                     {student.name}
                   </h1>
                   <StatusBadge status={student.status} size="md" />
                 </div>
-                <div className="text-sm font-semibold text-[#8B6F47]">
-                  {student.primaryRole}
+                <div>
+                  <span className="text-xs font-black uppercase tracking-wider bg-[#FFDE59] text-black px-2.5 py-1 rounded-md border border-black shadow-[1.5px_1.5px_0px_0px_#000]">
+                    {student.primaryRole}
+                  </span>
                 </div>
-                <div className="text-xs text-stone-500">
+                <div className="text-xs text-stone-600 font-bold pt-1">
                   {student.college} · {student.year} · {student.major}
                 </div>
               </div>
@@ -114,17 +114,18 @@ export default function StudentProfilePage() {
               {!isSelf ? (
                 <button
                   onClick={() => setShowCollabModal(true)}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-[#2E7058] hover:bg-[#245946] text-white font-semibold text-sm px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-black hover:bg-[#FF70A6] hover:text-black text-white font-black text-xs sm:text-sm uppercase px-6 py-3.5 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
                 >
-                  <Send className="w-4 h-4 text-[#A3C9AB]" />
+                  <Send className="w-4 h-4" />
                   <span>Send Collaboration Request</span>
+                  <ArrowUpRight className="w-4 h-4" />
                 </button>
               ) : (
                 <Link
                   href="/dashboard"
-                  className="inline-flex items-center gap-2 bg-[#D9C3A5] hover:bg-[#CBB08E] text-[#17231D] font-semibold text-xs px-5 py-2.5 rounded-full shadow-sm"
+                  className="inline-flex items-center gap-2 bg-[#FFDE59] text-black font-black text-xs uppercase px-5 py-2.5 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000]"
                 >
-                  Edit Profile in Dashboard
+                  Manage in Dashboard
                 </Link>
               )}
             </div>
@@ -132,54 +133,54 @@ export default function StudentProfilePage() {
         </div>
 
         {/* Content Layout Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Skills, Proof Metrics, Links */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column: Skills, Experience Metrics, Links */}
           <div className="space-y-6">
             {/* Experience Metrics */}
-            <div className="bg-white border border-[#E8E2D5] rounded-3xl p-6 shadow-sm">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#8B6F47] mb-4">
-                Experience Overview
+            <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 shadow-[5px_5px_0px_0px_#000]">
+              <h3 className="text-xs font-black uppercase tracking-wider text-black mb-4">
+                ★ Experience Record
               </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#F5F1E6] rounded-2xl p-4 text-center border border-[#E8E2D5]">
-                  <Briefcase className="w-5 h-5 text-[#2E7058] mx-auto mb-1.5" />
-                  <div className="text-2xl font-bold text-[#0F3D2E]">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-[#FFDE59] rounded-xl p-4 text-center border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                  <Briefcase className="w-5 h-5 text-black mx-auto mb-1.5" />
+                  <div className="text-3xl font-black text-black">
                     {student.projectCount}
                   </div>
-                  <div className="text-[11px] font-medium text-stone-600">Projects Built</div>
+                  <div className="text-[10px] font-black uppercase text-black">Projects</div>
                 </div>
-                <div className="bg-[#F5F1E6] rounded-2xl p-4 text-center border border-[#E8E2D5]">
-                  <Trophy className="w-5 h-5 text-[#D97706] mx-auto mb-1.5" />
-                  <div className="text-2xl font-bold text-[#0F3D2E]">
+                <div className="bg-[#4FD1C5] rounded-xl p-4 text-center border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                  <Trophy className="w-5 h-5 text-black mx-auto mb-1.5" />
+                  <div className="text-3xl font-black text-black">
                     {student.hackathonCount}
                   </div>
-                  <div className="text-[11px] font-medium text-stone-600">Hackathons</div>
+                  <div className="text-[10px] font-black uppercase text-black">Hackathons</div>
                 </div>
               </div>
             </div>
 
-            {/* Skills & Proficiency Stars */}
-            <div className="bg-white border border-[#E8E2D5] rounded-3xl p-6 shadow-sm space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#8B6F47]">
-                Skills & Proficiency
+            {/* Skills & Star Ratings */}
+            <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 shadow-[5px_5px_0px_0px_#000] space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-wider text-black">
+                ★ Skills & Mastery
               </h3>
               <div className="space-y-3">
                 {student.skills.map((sk) => (
                   <div key={sk.name} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-[#0F3D2E]">{sk.name}</span>
-                      <span className="text-stone-400 font-medium">{sk.category}</span>
+                      <span className="font-bold text-black">{sk.name}</span>
+                      <span className="text-[10px] font-bold text-stone-500 uppercase">{sk.category}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
+                        <span
                           key={star}
-                          className={`w-3.5 h-3.5 ${
-                            star <= sk.level
-                              ? 'text-[#F59E0B] fill-[#F59E0B]'
-                              : 'text-stone-200'
+                          className={`text-sm ${
+                            star <= sk.level ? 'text-black' : 'text-stone-300'
                           }`}
-                        />
+                        >
+                          ★
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -187,10 +188,10 @@ export default function StudentProfilePage() {
               </div>
             </div>
 
-            {/* Portfolio & Verified Links */}
-            <div className="bg-white border border-[#E8E2D5] rounded-3xl p-6 shadow-sm space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#8B6F47] mb-2">
-                Portfolio & External Proofs
+            {/* Portfolio & External Proofs */}
+            <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 shadow-[5px_5px_0px_0px_#000] space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-black mb-2">
+                ★ External Proofs
               </h3>
               <div className="space-y-2 text-xs">
                 {student.githubUrl && (
@@ -198,13 +199,13 @@ export default function StudentProfilePage() {
                     href={student.githubUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F1E6] hover:bg-[#E8E2D5] text-[#0F3D2E] font-medium transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF8F5] hover:bg-[#FFDE59] text-black font-black uppercase border-2 border-black shadow-[2px_2px_0px_0px_#000] transition-colors"
                   >
                     <span className="flex items-center gap-2">
-                      <GithubIcon className="w-4 h-4 text-stone-700" />
+                      <GithubIcon className="w-4 h-4 text-black" />
                       GitHub Profile
                     </span>
-                    <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
                 {student.figmaUrl && (
@@ -212,13 +213,13 @@ export default function StudentProfilePage() {
                     href={student.figmaUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F1E6] hover:bg-[#E8E2D5] text-[#0F3D2E] font-medium transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF8F5] hover:bg-[#FFDE59] text-black font-black uppercase border-2 border-black shadow-[2px_2px_0px_0px_#000] transition-colors"
                   >
                     <span className="flex items-center gap-2">
-                      <FigmaIcon className="w-4 h-4 text-[#EA580C]" />
-                      Figma Community
+                      <FigmaIcon className="w-4 h-4 text-black" />
+                      Figma Canvas
                     </span>
-                    <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
                 {student.portfolioUrl && (
@@ -226,13 +227,13 @@ export default function StudentProfilePage() {
                     href={student.portfolioUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F1E6] hover:bg-[#E8E2D5] text-[#0F3D2E] font-medium transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF8F5] hover:bg-[#FFDE59] text-black font-black uppercase border-2 border-black shadow-[2px_2px_0px_0px_#000] transition-colors"
                   >
                     <span className="flex items-center gap-2">
-                      <Code2 className="w-4 h-4 text-[#2E7058]" />
-                      Personal Portfolio
+                      <Code2 className="w-4 h-4 text-black" />
+                      Portfolio Site
                     </span>
-                    <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
               </div>
@@ -242,23 +243,23 @@ export default function StudentProfilePage() {
           {/* Right Column: About, Looking For, Verified Projects List */}
           <div className="lg:col-span-2 space-y-6">
             {/* About & Interests */}
-            <div className="bg-white border border-[#E8E2D5] rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#8B6F47]">
-                About Me
+            <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 sm:p-8 shadow-[5px_5px_0px_0px_#000] space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-wider text-black">
+                ★ About Me
               </h3>
-              <p className="text-sm text-stone-700 leading-relaxed">
+              <p className="text-sm text-stone-800 font-semibold leading-relaxed">
                 {student.bio}
               </p>
 
               <div>
-                <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">
+                <div className="text-[10px] font-black uppercase tracking-wider text-black mb-2">
                   Interests
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {student.interests.map((interest) => (
                     <span
                       key={interest}
-                      className="bg-[#F5F1E6] text-[#0F3D2E] text-xs font-medium px-3 py-1 rounded-lg border border-[#E8E2D5]"
+                      className="bg-[#FAF8F5] text-black text-xs font-bold px-3 py-1 rounded-lg border border-black shadow-[1.5px_1.5px_0px_0px_#000]"
                     >
                       {interest}
                     </span>
@@ -266,13 +267,13 @@ export default function StudentProfilePage() {
                 </div>
               </div>
 
-              {/* Looking For block */}
+              {/* Looking For goal */}
               {student.lookingForRole && (
-                <div className="bg-[#FAF7F0] border border-[#D9C3A5] rounded-2xl p-4 mt-4">
-                  <div className="text-xs font-bold uppercase tracking-wider text-[#8B6F47] mb-1">
-                    Looking For / Collaboration Goals:
+                <div className="bg-[#FFDE59] border-2 border-black rounded-xl p-4 shadow-[2.5px_2.5px_0px_0px_#000]">
+                  <div className="text-[10px] font-black uppercase tracking-wider text-black mb-1">
+                    Collaboration Goal:
                   </div>
-                  <p className="text-xs text-[#0F3D2E] font-medium">
+                  <p className="text-xs text-black font-bold">
                     {student.lookingForRole}
                   </p>
                 </div>
@@ -283,11 +284,11 @@ export default function StudentProfilePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
                 <div>
-                  <h3 className="text-xl font-bold text-[#0F3D2E]">
-                    Proof of Skills & Projects
+                  <h3 className="text-xl font-black uppercase tracking-tight text-black">
+                    Verified Portfolio Proofs
                   </h3>
-                  <p className="text-xs text-stone-500">
-                    Real applications with verified code and interactive demos.
+                  <p className="text-xs font-semibold text-stone-600">
+                    Real code and interactive products built by {student.name}.
                   </p>
                 </div>
               </div>
@@ -296,20 +297,20 @@ export default function StudentProfilePage() {
                 {student.proofs.map((proof, idx) => (
                   <div
                     key={idx}
-                    className="bg-white border border-[#E8E2D5] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all space-y-4"
+                    className="bg-white border-[2.5px] border-black rounded-2xl p-6 shadow-[5px_5px_0px_0px_#000] hover:-translate-y-0.5 transition-all space-y-3"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#2E7058]/10 text-[#2E7058]">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#4FD1C5] text-black border border-black shadow-[1.5px_1.5px_0px_0px_#000]">
                           {proof.role}
                         </span>
-                        <h4 className="text-lg font-bold text-[#0F3D2E] mt-1.5">
+                        <h4 className="text-lg font-black uppercase text-black mt-2">
                           {proof.title}
                         </h4>
                       </div>
                     </div>
 
-                    <p className="text-xs text-stone-600 leading-relaxed">
+                    <p className="text-xs text-stone-700 font-medium leading-relaxed">
                       {proof.description}
                     </p>
 
@@ -317,23 +318,23 @@ export default function StudentProfilePage() {
                       {proof.technologies.map((tech) => (
                         <span
                           key={tech}
-                          className="bg-[#F5F1E6] text-stone-700 text-[11px] font-medium px-2.5 py-0.5 rounded-md border border-[#E8E2D5]"
+                          className="bg-[#FAF8F5] text-black text-[11px] font-bold px-2.5 py-0.5 rounded-md border border-black"
                         >
                           {tech}
                         </span>
                       ))}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-stone-100 text-xs">
+                    <div className="flex flex-wrap items-center gap-3 pt-3 border-t-2 border-black text-xs font-black uppercase">
                       {proof.githubUrl && (
                         <a
                           href={proof.githubUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 font-semibold text-[#0F3D2E] hover:text-[#2E7058] transition-colors"
+                          className="inline-flex items-center gap-1.5 text-black hover:underline"
                         >
                           <GithubIcon className="w-3.5 h-3.5" />
-                          <span>View Code</span>
+                          <span>View Code ↗</span>
                         </a>
                       )}
                       {proof.liveDemoUrl && (
@@ -341,10 +342,10 @@ export default function StudentProfilePage() {
                           href={proof.liveDemoUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 font-semibold text-[#2E7058] hover:text-[#0F3D2E] transition-colors"
+                          className="inline-flex items-center gap-1.5 bg-[#FFDE59] px-3 py-1 rounded-lg border border-black shadow-[1.5px_1.5px_0px_0px_#000] text-black"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
-                          <span>Live Interactive Demo</span>
+                          <span>Live Demo ↗</span>
                         </a>
                       )}
                       {proof.figmaUrl && (
@@ -352,10 +353,10 @@ export default function StudentProfilePage() {
                           href={proof.figmaUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 font-semibold text-[#EA580C] hover:text-[#C2410C] transition-colors"
+                          className="inline-flex items-center gap-1.5 bg-[#FF70A6] px-3 py-1 rounded-lg border border-black shadow-[1.5px_1.5px_0px_0px_#000] text-black"
                         >
                           <FigmaIcon className="w-3.5 h-3.5" />
-                          <span>Figma Canvas Prototype</span>
+                          <span>Figma Prototype ↗</span>
                         </a>
                       )}
                     </div>

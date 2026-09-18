@@ -9,67 +9,65 @@ export default function FeatureStrip() {
       title: 'Find Talent',
       description: 'Search students by verified skills, real project proofs, and portfolio links.',
       href: '/students',
-      badgeColor: 'bg-[#A3C9AB]/20 text-[#A3C9AB]',
-      iconColor: 'text-[#A3C9AB]'
+      bgColor: 'bg-[#FFDE59]', // Electric Yellow
+      iconBg: 'bg-white'
     },
     {
       icon: FolderPlus,
       title: 'Post Projects',
       description: 'Share your ideas, set required roles, and discover students ready to build.',
       href: '/projects?new=true',
-      badgeColor: 'bg-[#D9C3A5]/20 text-[#D9C3A5]',
-      iconColor: 'text-[#D9C3A5]'
+      bgColor: 'bg-[#FF70A6]', // Bubblegum Pink
+      iconBg: 'bg-white'
     },
     {
       icon: Calendar,
-      title: 'Join Opportunities',
+      title: 'Opportunities',
       description: 'Explore campus hackathons, workshops, and team-formation meetups.',
       href: '/events',
-      badgeColor: 'bg-[#A3C9AB]/20 text-[#A3C9AB]',
-      iconColor: 'text-[#A3C9AB]'
+      bgColor: 'bg-[#4FD1C5]', // Neo Mint
+      iconBg: 'bg-white'
     },
     {
       icon: Users,
       title: 'Grow Together',
       description: 'Turn ideas into working MVPs through mutual skills, proof, and collaboration.',
       href: '/dashboard',
-      badgeColor: 'bg-[#D9C3A5]/20 text-[#D9C3A5]',
-      iconColor: 'text-[#D9C3A5]'
+      bgColor: 'bg-[#9B87F5]', // Electric Lavender
+      iconBg: 'bg-white'
     }
   ];
 
   return (
-    <div className="relative -mt-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-20">
-      <div className="bg-[#0F3D2E] text-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-[#2E7058] shadow-[0_16px_40px_rgba(15,61,46,0.3)]">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 divide-y md:divide-y-0 md:divide-x divide-[#2E7058]/60">
-          {features.map((feat, idx) => {
-            const Icon = feat.icon;
-            return (
-              <Link
-                key={feat.title}
-                href={feat.href}
-                className={`group block pt-6 md:pt-0 ${
-                  idx > 0 ? 'md:pl-6 lg:pl-8' : ''
-                } cursor-pointer`}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center ${feat.badgeColor} group-hover:scale-110 transition-transform duration-200`}
-                  >
-                    <Icon className={`w-6 h-6 ${feat.iconColor}`} />
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 text-stone-400 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+    <div className="relative -mt-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-20">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {features.map((feat) => {
+          const Icon = feat.icon;
+          return (
+            <Link
+              key={feat.title}
+              href={feat.href}
+              className={`group block p-6 rounded-2xl ${feat.bgColor} border-[2.5px] border-black shadow-[5px_5px_0px_0px_#000] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[7px_7px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#000] transition-all cursor-pointer`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div
+                  className={`w-12 h-12 rounded-xl ${feat.iconBg} border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center justify-center group-hover:scale-105 transition-transform`}
+                >
+                  <Icon className="w-6 h-6 text-black" />
                 </div>
-                <h3 className="font-bold text-lg text-white group-hover:text-[#A3C9AB] transition-colors mb-2">
-                  {feat.title}
-                </h3>
-                <p className="text-xs text-stone-300 leading-relaxed font-normal">
-                  {feat.description}
-                </p>
-              </Link>
-            );
-          })}
-        </div>
+                <div className="w-8 h-8 rounded-full bg-white border-2 border-black flex items-center justify-center font-bold group-hover:bg-black group-hover:text-white transition-colors">
+                  <ArrowUpRight className="w-4 h-4" />
+                </div>
+              </div>
+              <h3 className="font-black text-xl text-black uppercase tracking-tight mb-1.5">
+                {feat.title}
+              </h3>
+              <p className="text-xs text-black font-semibold leading-relaxed">
+                {feat.description}
+              </p>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

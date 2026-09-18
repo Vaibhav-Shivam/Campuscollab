@@ -9,7 +9,7 @@ import {
   Users,
   CheckCircle2,
   Sparkles,
-  ArrowRight,
+  ArrowUpRight,
   Filter,
   Globe
 } from 'lucide-react';
@@ -39,37 +39,36 @@ export default function CampusEventsPage() {
   }, [events, searchQuery, selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-[#F5F1E6] py-12 md:py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+    <div className="min-h-screen bg-[#FAF8F5] py-12 md:py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-1.5 bg-[#2E7058]/10 text-[#0F3D2E] border border-[#2E7058]/20 px-3.5 py-1 rounded-full text-xs font-bold">
-            <Calendar className="w-3.5 h-3.5 text-[#2E7058]" />
-            <span>Campus Gatherings & Opportunities</span>
+          <div className="inline-flex items-center gap-1.5 bg-[#4FD1C5] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider">
+            <span>★</span>
+            <span>CAMPUS OPPORTUNITIES</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-bold text-[#0F3D2E] tracking-tight">
-            Upcoming Campus Events
+          <h1 className="text-3xl sm:text-5xl font-black text-black uppercase tracking-tight">
+            Campus Hackathons & Events
           </h1>
-          <p className="text-sm text-stone-600 leading-relaxed">
-            Discover hackathons, workshops, and project showcases where student teams form and build.
+          <p className="text-sm font-semibold text-stone-700 leading-relaxed">
+            Discover hackathons, workshops, and project showcases where student teams form and build together.
           </p>
         </div>
 
         {/* Filter Controls */}
-        <div className="bg-white border border-[#E8E2D5] rounded-3xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Category Filter */}
+        <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 shadow-[5px_5px_0px_0px_#000] flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-bold uppercase tracking-wider text-stone-400 mr-2 flex items-center gap-1">
+            <span className="text-xs font-black uppercase tracking-wider text-black mr-2 flex items-center gap-1">
               <Filter className="w-3 h-3" /> Event Type:
             </span>
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3.5 py-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-2 border-black ${
                   selectedCategory === cat
-                    ? 'bg-[#0F3D2E] text-white shadow-sm'
-                    : 'bg-[#F5F1E6] text-stone-700 hover:bg-[#E8E2D5]'
+                    ? 'bg-black text-white shadow-[2px_2px_0px_0px_#000]'
+                    : 'bg-white text-black hover:bg-[#FFDE59] shadow-[2px_2px_0px_0px_#000]'
                 }`}
               >
                 {cat}
@@ -77,32 +76,32 @@ export default function CampusEventsPage() {
             ))}
           </div>
 
-          <div className="text-xs text-stone-500 font-medium">
-            Showing <strong className="text-[#0F3D2E]">{filteredEvents.length}</strong> event{filteredEvents.length === 1 ? '' : 's'}
+          <div className="text-xs font-black uppercase text-black">
+            Showing <strong>{filteredEvents.length}</strong> event{filteredEvents.length === 1 ? '' : 's'}
           </div>
         </div>
 
         {/* Events Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEvents.map((evt) => (
             <div
               key={evt.id}
-              className="bg-white border border-[#E8E2D5] rounded-3xl overflow-hidden shadow-[0_8px_24px_rgba(15,61,46,0.06)] hover:shadow-[0_14px_36px_rgba(15,61,46,0.12)] transition-all flex flex-col justify-between group"
+              className="bg-white border-[2.5px] border-black rounded-2xl overflow-hidden shadow-[5px_5px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[7px_7px_0px_0px_#000] transition-all flex flex-col justify-between group"
             >
               <div>
                 {/* Event Image */}
-                <div className="relative h-48 w-full overflow-hidden bg-stone-100">
+                <div className="relative h-48 w-full overflow-hidden border-b-2 border-black bg-stone-100">
                   <img
                     src={evt.image}
                     alt={evt.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                   />
-                  <div className="absolute top-3 left-3 bg-[#0F3D2E]/90 text-white text-xs font-bold px-3 py-1 rounded-full border border-[#2E7058]">
+                  <div className="absolute top-3 left-3 bg-[#FFDE59] text-black text-[10px] font-black uppercase px-3 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                     {evt.category}
                   </div>
                   {evt.isOnline ? (
-                    <div className="absolute top-3 right-3 bg-white/90 text-[#0F3D2E] text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
-                      <Globe className="w-3 h-3 text-[#2E7058]" />
+                    <div className="absolute top-3 right-3 bg-white text-black text-[10px] font-black uppercase px-2.5 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center gap-1">
+                      <Globe className="w-3 h-3" />
                       Online
                     </div>
                   ) : null}
@@ -111,33 +110,33 @@ export default function CampusEventsPage() {
                 {/* Content */}
                 <div className="p-6 space-y-4">
                   <div>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#8B6F47] mb-1">
+                    <div className="flex items-center gap-1.5 text-xs font-black uppercase text-black mb-1">
                       <Calendar className="w-3.5 h-3.5" />
                       <span>{evt.date}</span>
                     </div>
-                    <h3 className="text-xl font-bold text-[#0F3D2E] leading-snug">
+                    <h3 className="text-xl font-black uppercase tracking-tight text-black leading-snug">
                       {evt.title}
                     </h3>
-                    <div className="flex items-center gap-1 text-xs text-stone-500 mt-1">
-                      <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                    <div className="flex items-center gap-1 text-xs font-semibold text-stone-600 mt-1">
+                      <MapPin className="w-3.5 h-3.5 text-black shrink-0" />
                       <span className="truncate">{evt.location}</span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed">
+                  <p className="text-xs text-stone-700 font-medium line-clamp-3 leading-relaxed">
                     {evt.description}
                   </p>
 
                   {/* Skills Focus */}
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1.5">
-                      Relevant Skills
+                    <div className="text-[10px] font-black uppercase tracking-wider text-black mb-1.5">
+                      Target Stack:
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {evt.skillsFocus.map((skill) => (
                         <span
                           key={skill}
-                          className="text-[11px] bg-[#F5F1E6] text-[#0F3D2E] px-2 py-0.5 rounded-md border border-[#E8E2D5]"
+                          className="text-[11px] font-bold bg-[#FAF8F5] text-black px-2 py-0.5 rounded-md border border-black shadow-[1px_1px_0px_0px_#000]"
                         >
                           {skill}
                         </span>
@@ -149,39 +148,39 @@ export default function CampusEventsPage() {
 
               {/* Card Footer Actions */}
               <div className="p-6 pt-0 space-y-3">
-                <div className="flex items-center justify-between text-xs text-stone-500 border-t border-stone-100 pt-3">
+                <div className="flex items-center justify-between text-xs font-bold text-black border-t-2 border-black pt-3">
                   <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5 text-[#2E7058]" />
-                    <strong className="text-[#0F3D2E]">{evt.attendeesCount}</strong> students registered
+                    <Users className="w-3.5 h-3.5" />
+                    <strong>{evt.attendeesCount}</strong> students registered
                   </span>
-                  <span className="text-[11px] text-stone-400">By {evt.organizer}</span>
+                  <span className="text-[10px] font-black uppercase text-stone-500">{evt.organizer}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => toggleEventRegistration(evt.id)}
-                    className={`flex-1 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 border-2 border-black ${
                       evt.isRegistered
-                        ? 'bg-[#10B981]/15 text-[#065F46] border border-[#10B981]/30'
-                        : 'bg-[#2E7058] hover:bg-[#245946] text-white shadow-sm hover:shadow'
+                        ? 'bg-[#38E54D] text-black shadow-[2px_2px_0px_0px_#000]'
+                        : 'bg-[#FFDE59] hover:bg-[#FF70A6] text-black shadow-[2.5px_2.5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none'
                     }`}
                   >
                     {evt.isRegistered ? (
                       <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
-                        <span>Registered</span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-black" />
+                        <span>Registered ✓</span>
                       </>
                     ) : (
-                      <span>Register Interest</span>
+                      <span>Register RSVP</span>
                     )}
                   </button>
 
                   <Link
                     href={`/match`}
-                    className="p-2.5 bg-[#D9C3A5] hover:bg-[#CBB08E] text-[#17231D] rounded-full transition-colors cursor-pointer"
+                    className="p-2.5 bg-black hover:bg-[#FFDE59] text-white hover:text-black rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] transition-colors cursor-pointer"
                     title="Find teammates for this hackathon / event"
                   >
-                    <Sparkles className="w-4 h-4 text-[#0F3D2E]" />
+                    <Sparkles className="w-4 h-4" />
                   </Link>
                 </div>
               </div>

@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import ProjectCard from '@/components/ProjectCard';
 import CreateProjectModal from '@/components/CreateProjectModal';
-import { Search, PlusCircle, Filter, Sparkles, FolderKanban } from 'lucide-react';
+import { Search, PlusCircle, Filter, Sparkles, FolderKanban, ArrowUpRight } from 'lucide-react';
 import { ProjectType } from '@/types';
 
 function ProjectsFeedContent() {
@@ -19,10 +19,8 @@ function ProjectsFeedContent() {
   const [selectedSkill, setSelectedSkill] = useState<string>('All');
 
   const projectTypes = ['All', 'Hackathon', 'Startup', 'Academic', 'Personal'];
-
   const popularSkills = ['All', 'React', 'UI/UX', 'Python', 'Figma', 'Next.js', 'AI/ML'];
 
-  // Filter projects
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {
       const q = searchQuery.toLowerCase().trim();
@@ -46,48 +44,49 @@ function ProjectsFeedContent() {
   }, [projects, searchQuery, selectedType, selectedSkill]);
 
   return (
-    <div className="min-h-screen bg-[#F5F1E6] py-12 md:py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+    <div className="min-h-screen bg-[#FAF8F5] py-12 md:py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 bg-[#2E7058]/10 text-[#0F3D2E] border border-[#2E7058]/20 px-3.5 py-1 rounded-full text-xs font-bold">
-              <FolderKanban className="w-3.5 h-3.5 text-[#2E7058]" />
-              <span>Community Project Feed</span>
+            <div className="inline-flex items-center gap-1.5 bg-[#FFDE59] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider">
+              <span>★</span>
+              <span>COMMUNITY PROJECT BOARD</span>
             </div>
-            <h1 className="text-3xl sm:text-5xl font-bold text-[#0F3D2E] tracking-tight">
+            <h1 className="text-3xl sm:text-5xl font-black text-black uppercase tracking-tight">
               Project Requirements
             </h1>
-            <p className="text-sm text-stone-600 max-w-xl leading-relaxed">
-              Explore open project posts from fellow campus builders seeking specific skills, or post your own idea.
+            <p className="text-sm font-semibold text-stone-700 max-w-xl leading-relaxed">
+              Explore open project posts from fellow campus builders looking for teammates, or post your own concept.
             </p>
           </div>
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center justify-center gap-2 bg-[#0F3D2E] hover:bg-[#1A4B3A] text-white font-semibold text-sm px-6 py-3.5 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer self-start md:self-auto"
+            className="inline-flex items-center justify-center gap-2 bg-[#FF70A6] hover:bg-black hover:text-white text-black font-black text-xs sm:text-sm uppercase tracking-wider px-6 py-3.5 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer self-start md:self-auto"
           >
-            <PlusCircle className="w-4 h-4 text-[#A3C9AB]" />
+            <PlusCircle className="w-4 h-4" />
             <span>Post a New Project</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Filter & Search Bar */}
-        <div className="bg-white border border-[#E8E2D5] rounded-3xl p-6 shadow-sm space-y-5">
+        {/* Filter & Search Controls */}
+        <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 shadow-[5px_5px_0px_0px_#000] space-y-5">
           {/* Search Input */}
           <div className="relative">
-            <Search className="w-5 h-5 text-stone-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-5 h-5 text-black absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by project name, description, required skill, or creator..."
-              className="w-full bg-[#F5F1E6]/60 border border-[#D9C3A5] rounded-2xl pl-12 pr-4 py-3.5 text-sm text-[#17231D] focus:outline-none focus:ring-2 focus:ring-[#2E7058] placeholder:text-stone-400 font-medium"
+              className="w-full bg-[#FAF8F5] border-2 border-black rounded-xl pl-12 pr-4 py-3 text-xs sm:text-sm text-black font-bold focus:outline-none shadow-[3px_3px_0px_0px_#000] placeholder:text-stone-500"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-400 hover:text-stone-700 bg-stone-200/60 px-2 py-0.5 rounded-full cursor-pointer"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-black bg-[#FF6B6B] border border-black px-2 py-0.5 rounded-md cursor-pointer"
               >
                 Clear
               </button>
@@ -95,19 +94,19 @@ function ProjectsFeedContent() {
           </div>
 
           {/* Project Type Filters */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t border-stone-100">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t-2 border-black">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-xs font-bold uppercase tracking-wider text-stone-400 mr-1.5 flex items-center gap-1">
+              <span className="text-xs font-black uppercase tracking-wider text-black mr-1 flex items-center gap-1">
                 <Filter className="w-3 h-3" /> Category:
               </span>
               {projectTypes.map((type) => (
                 <button
                   key={type}
                   onClick={() => setSelectedType(type)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-2 border-black ${
                     selectedType === type
-                      ? 'bg-[#0F3D2E] text-white shadow-sm'
-                      : 'bg-[#F5F1E6] text-stone-700 hover:bg-[#E8E2D5]'
+                      ? 'bg-black text-white shadow-[2px_2px_0px_0px_#000]'
+                      : 'bg-white text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#FFDE59]'
                   }`}
                 >
                   {type}
@@ -117,17 +116,17 @@ function ProjectsFeedContent() {
 
             {/* Required Skill Quick Chips */}
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-xs font-bold uppercase tracking-wider text-stone-400 mr-1.5 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-[#2E7058]" /> Skill Needed:
+              <span className="text-xs font-black uppercase tracking-wider text-black mr-1 flex items-center gap-1">
+                <span>★</span> Skill:
               </span>
               {popularSkills.map((sk) => (
                 <button
                   key={sk}
                   onClick={() => setSelectedSkill(sk)}
-                  className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer border-2 border-black ${
                     selectedSkill === sk
-                      ? 'bg-[#2E7058] text-white'
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      ? 'bg-[#FFDE59] text-black shadow-[2px_2px_0px_0px_#000]'
+                      : 'bg-white text-black hover:bg-stone-100 shadow-[1.5px_1.5px_0px_0px_#000]'
                   }`}
                 >
                   {sk}
@@ -137,10 +136,10 @@ function ProjectsFeedContent() {
           </div>
         </div>
 
-        {/* Results Metadata */}
-        <div className="flex items-center justify-between text-xs text-stone-600 px-1">
+        {/* Results Count */}
+        <div className="flex items-center justify-between text-xs font-black text-black px-1 uppercase">
           <div>
-            Showing <strong className="text-[#0F3D2E]">{filteredProjects.length}</strong> project{filteredProjects.length === 1 ? '' : 's'} seeking collaborators
+            Showing <strong>{filteredProjects.length}</strong> project{filteredProjects.length === 1 ? '' : 's'} seeking teammates
           </div>
           {(searchQuery || selectedType !== 'All' || selectedSkill !== 'All') && (
             <button
@@ -149,14 +148,14 @@ function ProjectsFeedContent() {
                 setSelectedType('All');
                 setSelectedSkill('All');
               }}
-              className="text-[#2E7058] hover:underline font-semibold cursor-pointer"
+              className="underline text-black font-black cursor-pointer"
             >
               Reset filters
             </button>
           )}
         </div>
 
-        {/* Project Grid */}
+        {/* Projects Grid */}
         {filteredProjects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project) => (
@@ -164,19 +163,19 @@ function ProjectsFeedContent() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 bg-white border border-[#E8E2D5] rounded-3xl p-8 space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#F5F1E6] flex items-center justify-center text-stone-400 mx-auto">
-              <Search className="w-6 h-6" />
+          <div className="text-center py-16 bg-white border-[2.5px] border-black rounded-2xl p-8 shadow-[5px_5px_0px_0px_#000] space-y-3">
+            <div className="w-12 h-12 rounded-xl bg-[#FFDE59] border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center justify-center font-black text-xl mx-auto">
+              ★
             </div>
-            <h3 className="text-lg font-bold text-[#0F3D2E]">No Projects Found</h3>
-            <p className="text-xs text-stone-500 max-w-sm mx-auto">
-              No open project posts matched your search filters. Try clearing your filters or create a new project post!
+            <h3 className="text-lg font-black uppercase text-black">No Projects Found</h3>
+            <p className="text-xs font-medium text-stone-600 max-w-sm mx-auto">
+              No open project posts matched your search filters. Be the first to post a new project!
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-white bg-[#0F3D2E] px-5 py-2.5 rounded-full cursor-pointer"
+              className="inline-flex items-center gap-2 text-xs font-black uppercase text-black bg-[#FFDE59] px-5 py-2.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4 text-[#A3C9AB]" />
+              <PlusCircle className="w-4 h-4" />
               <span>Post Your Project</span>
             </button>
           </div>
@@ -194,7 +193,7 @@ export default function ProjectsFeedPage() {
   return (
     <React.Suspense
       fallback={
-        <div className="min-h-screen bg-[#F5F1E6] flex items-center justify-center text-sm font-medium text-[#0F3D2E]">
+        <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center text-sm font-black uppercase text-black">
           Loading campus projects...
         </div>
       }

@@ -2,154 +2,178 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Users, Briefcase, CheckCircle, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Sparkles, Users, Briefcase, CheckCircle, ShieldCheck, ArrowUpRight, Search } from 'lucide-react';
 
 export default function HeroBotanical() {
   return (
-    <section className="relative bg-[#0F3D2E] text-white overflow-hidden pt-12 pb-20 md:py-24 border-b border-[#1F5341]">
-      {/* Organic Nature Background Glow & Texture */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">
-        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <filter id="noiseFilter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
-          </filter>
-          <rect width="100%" height="100%" filter="url(#noiseFilter)" />
-        </svg>
+    <section className="relative bg-[#FAF8F5] text-black overflow-hidden pt-12 pb-16 md:py-20 border-b-[2.5px] border-black">
+      {/* Subtle retro dot background grid */}
+      <div className="absolute inset-0 opacity-40 pointer-events-none neo-dot-bg"></div>
+
+      {/* Floating 3D Gumroad-style Coin Stickers (from Image 2) */}
+      <div className="absolute top-10 right-8 lg:right-28 hidden sm:flex flex-col items-center gap-3 pointer-events-none animate-bounce duration-1000">
+        <div className="w-20 h-20 rounded-full bg-[#FF70A6] border-[2.5px] border-black shadow-[5px_5px_0px_0px_#000] flex items-center justify-center font-black text-2xl text-black rotate-12">
+          ★
+        </div>
+      </div>
+      <div className="absolute top-44 right-4 lg:right-12 hidden md:flex pointer-events-none">
+        <div className="w-14 h-14 rounded-full bg-[#FFDE59] border-2 border-black shadow-[4px_4px_0px_0px_#000] flex items-center justify-center font-black text-lg text-black -rotate-12">
+          ✦
+        </div>
+      </div>
+      <div className="absolute bottom-12 left-6 hidden lg:flex pointer-events-none">
+        <div className="w-16 h-16 rounded-full bg-[#4FD1C5] border-[2.5px] border-black shadow-[4px_4px_0px_0px_#000] flex items-center justify-center font-black text-xl text-black rotate-6">
+          ⚡
+        </div>
       </div>
 
-      {/* Decorative leaf shapes & ambient gradients matching reference */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-[#2E7058]/40 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-[#8B6F47]/30 rounded-full blur-3xl pointer-events-none"></div>
-
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          {/* Left Column: Headlines & CTAs */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          {/* Left Column: Giant Headlines & CTAs */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Campus Tag Badge */}
-            <div className="inline-flex items-center gap-2 bg-[#2E7058]/80 border border-[#A3C9AB]/30 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#A3C9AB] shadow-inner">
-              <Sparkles className="w-3.5 h-3.5 text-[#A3C9AB]" />
-              <span>Campus Talent & Teammate Network</span>
+            {/* Top Pill Sticker */}
+            <div className="inline-flex items-center gap-2 bg-[#FFDE59] border-2 border-black px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow-[2.5px_2.5px_0px_0px_#000]">
+              <span>★</span>
+              <span>CAMPUS TALENT & PROJECT MATCHING</span>
             </div>
 
-            {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.12]">
-              Find Your <br />
-              <span className="text-[#A3C9AB] underline decoration-[#8B6F47]/60 underline-offset-8">
-                Project People
+            {/* Giant Headline (Matching Image 2: "GO FROM 0 TO $1") */}
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight uppercase leading-[0.98]">
+              GO FROM IDEA <br />
+              <span className="bg-[#FF70A6] px-2 py-0.5 border-2 border-black shadow-[4px_4px_0px_0px_#000] inline-block mt-2 rotate-[-1deg]">
+                TO REALITY.
+              </span> <br />
+              <span className="text-black inline-block mt-1">
+                FIND YOUR PEOPLE.
               </span>
             </h1>
 
             {/* Supporting Copy */}
-            <p className="text-base sm:text-lg text-stone-200 leading-relaxed max-w-xl font-normal">
-              Connect with students, find teammates, showcase your verified portfolio proof, and build amazing projects together — within your campus.
+            <p className="text-base sm:text-lg text-stone-800 font-medium leading-relaxed max-w-xl">
+              Anyone with an idea can build it on campus. Connect with skilled designers, backend developers, and video creators ready to collaborate right now.
             </p>
 
-            {/* Editorial Statement from UI/UX Spec */}
-            <div className="border-l-2 border-[#D9C3A5] pl-4 py-1 text-xs sm:text-sm text-stone-300 italic font-light">
-              &ldquo;Skills create opportunities. People bring ideas to life.&rdquo;
+            {/* Search/Explore Bar matching Gumroad input */}
+            <div className="pt-2 max-w-lg">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href="/match"
+                  className="bg-black hover:bg-[#FFDE59] hover:text-black text-white font-black text-sm uppercase tracking-wider px-7 py-3.5 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span>Find Teammates AI</span>
+                  <ArrowUpRight className="w-4 h-4" />
+                </Link>
+
+                <Link
+                  href="/students"
+                  className="bg-[#FFDE59] hover:bg-[#ffe780] text-black font-black text-sm uppercase tracking-wider px-6 py-3.5 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer text-center"
+                >
+                  Explore Students
+                </Link>
+              </div>
             </div>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Link
-                href="/match"
-                className="bg-[#2E7058] hover:bg-[#245946] text-white font-semibold px-7 py-3.5 rounded-full shadow-[0_4px_20px_rgba(46,112,88,0.4)] hover:shadow-[0_8px_25px_rgba(46,112,88,0.6)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer flex items-center gap-2.5 text-sm sm:text-base ring-2 ring-[#A3C9AB]/20"
-              >
-                <span>Find Teammates with AI</span>
-                <ArrowRight className="w-4 h-4 text-[#A3C9AB]" />
-              </Link>
-
-              <Link
-                href="/students"
-                className="bg-[#D9C3A5] hover:bg-[#CBB08E] text-[#17231D] font-semibold px-6 py-3.5 rounded-full shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer text-sm sm:text-base"
-              >
-                Explore Students
-              </Link>
-            </div>
-
-            {/* Trust Badges */}
-            <div className="flex flex-wrap items-center gap-6 pt-4 text-xs text-stone-300">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle className="w-4 h-4 text-[#A3C9AB]" />
-                <span>Verified Portfolio Proofs</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#D9C3A5]" />
-                <span>Private Request System</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-[#10B981]" />
-                <span>Active Campus Community</span>
-              </div>
+            {/* Neo-brutalist feature badges */}
+            <div className="flex flex-wrap items-center gap-3 pt-3 text-xs font-bold uppercase">
+              <span className="inline-flex items-center gap-1.5 bg-white border-2 border-black px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000]">
+                <CheckCircle className="w-3.5 h-3.5 text-black" />
+                <span>Verified Code Proofs</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 bg-white border-2 border-black px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000]">
+                <ShieldCheck className="w-3.5 h-3.5 text-black" />
+                <span>Privacy-First Requests</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 bg-[#4FD1C5] border-2 border-black px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000]">
+                <Users className="w-3.5 h-3.5 text-black" />
+                <span>Active Campuses</span>
+              </span>
             </div>
           </div>
 
-          {/* Right Column: Editorial Visual & Interactive Preview Card */}
+          {/* Right Column: Neo-Brutalist Bento Card Composition (Matching Image 0 & 2) */}
           <div className="lg:col-span-5 relative">
-            <div className="relative mx-auto max-w-md lg:max-w-none">
-              {/* Reference Botanical Accent Background Frame */}
-              <div className="absolute -inset-2 bg-gradient-to-tr from-[#8B6F47]/40 via-[#2E7058]/50 to-[#A3C9AB]/20 rounded-3xl blur-xl"></div>
-
-              {/* Main Visual Composition Card */}
-              <div className="relative bg-[#174636] border border-[#2E7058] rounded-3xl p-6 sm:p-7 shadow-2xl text-white backdrop-blur-md">
-                {/* AI Match Floating Ribbon */}
-                <div className="flex items-center justify-between pb-4 border-b border-[#2E7058] mb-5">
+            <div className="relative mx-auto max-w-md lg:max-w-none space-y-4">
+              {/* Main Card with Pink Header Block */}
+              <div className="bg-white border-[2.5px] border-black rounded-2xl shadow-[7px_7px_0px_0px_#000] overflow-hidden">
+                {/* Colored Top Header Block */}
+                <div className="bg-[#FF70A6] border-b-2 border-black p-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse"></span>
-                    <span className="text-xs font-semibold text-[#A3C9AB] tracking-wide uppercase">
+                    <span className="w-3 h-3 rounded-full bg-black"></span>
+                    <span className="font-black text-xs uppercase tracking-wider text-black">
                       Live Teammate Match
                     </span>
                   </div>
-                  <span className="text-xs font-bold bg-[#A3C9AB] text-[#0F3D2E] px-2.5 py-0.5 rounded-full">
-                    92% Match
+                  <span className="text-xs font-black bg-black text-[#FFDE59] px-3 py-0.5 rounded-full border border-black shadow-[1.5px_1.5px_0px_0px_#FFDE59]">
+                    92% MATCH
                   </span>
                 </div>
 
                 {/* Candidate Highlight */}
-                <div className="flex items-center gap-4 mb-4">
-                  <img
-                    src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400"
-                    alt="Priya Patel"
-                    className="w-16 h-16 rounded-2xl object-cover ring-2 ring-[#A3C9AB]"
-                  />
-                  <div>
-                    <h3 className="font-bold text-lg text-white">Priya Patel</h3>
-                    <p className="text-xs text-[#D9C3A5] font-medium">React Developer & UI/UX</p>
-                    <p className="text-[11px] text-stone-300">Institute of Eng & Tech · 3rd Year</p>
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400"
+                      alt="Priya Patel"
+                      className="w-16 h-16 rounded-xl object-cover border-2 border-black shadow-[3px_3px_0px_0px_#000]"
+                    />
+                    <div>
+                      <h3 className="font-black text-lg text-black uppercase">Priya Patel</h3>
+                      <p className="text-xs font-bold text-black bg-[#FFDE59] px-2 py-0.5 rounded-md border border-black inline-block mt-0.5">
+                        React Developer & UI/UX
+                      </p>
+                      <p className="text-[11px] font-medium text-stone-600 mt-1">
+                        Institute of Tech · 3rd Year
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Why Recommended AI breakdown */}
+                  <div className="bg-[#FAF8F5] rounded-xl p-3.5 border-2 border-black space-y-1.5 text-xs font-bold">
+                    <div className="text-[11px] uppercase tracking-wider text-black flex items-center gap-1 font-black">
+                      <span>★</span> WHY RECOMMENDED:
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-800 font-semibold">
+                      <span className="font-black text-black">✓</span>
+                      <span>Mastery in React, Next.js & Tailwind CSS</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-800 font-semibold">
+                      <span className="font-black text-black">✓</span>
+                      <span>4 verified project proofs on GitHub</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-800 font-semibold">
+                      <span className="font-black text-black">✓</span>
+                      <span className="bg-[#4FD1C5] px-1.5 py-0.5 rounded border border-black text-black">Available for Projects</span>
+                    </div>
+                  </div>
+
+                  {/* Connect Action Button */}
+                  <div className="pt-2 flex items-center justify-between">
+                    <div className="text-xs font-bold text-black flex items-center gap-1">
+                      <Briefcase className="w-3.5 h-3.5" />
+                      <span>Project: <strong>AI Expense Tracker</strong></span>
+                    </div>
+                    <Link
+                      href="/match"
+                      className="text-xs font-black bg-black text-white hover:bg-[#FFDE59] hover:text-black px-4 py-2 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] transition-all cursor-pointer inline-flex items-center gap-1 uppercase"
+                    >
+                      <span>Match ↗</span>
+                    </Link>
                   </div>
                 </div>
+              </div>
 
-                {/* Why Recommended AI breakdown */}
-                <div className="bg-[#0F3D2E]/90 rounded-2xl p-4 border border-[#2E7058] space-y-2 mb-5 text-xs">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#A3C9AB]">
-                    Why Recommended:
+              {/* Smaller Yellow Bento Stat Badge (Matching Image 2 Yellow Box) */}
+              <div className="bg-[#FFDE59] border-2 border-black rounded-2xl p-4 shadow-[4px_4px_0px_0px_#000] flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-wider text-black">
+                    Real Students · Real Projects
                   </div>
-                  <div className="flex items-center gap-2 text-stone-200">
-                    <span className="text-[#10B981] font-bold">✓</span>
-                    <span>Proficient in React, Next.js & Tailwind CSS</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-stone-200">
-                    <span className="text-[#10B981] font-bold">✓</span>
-                    <span>4 verified projects in portfolio (Study Room Planner)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-stone-200">
-                    <span className="text-[#10B981] font-bold">✓</span>
-                    <span className="text-[#A3C9AB] font-medium">Currently Available for Projects</span>
+                  <div className="text-2xl font-black text-black tracking-tight">
+                    100% FREE CAMPUS NETWORK
                   </div>
                 </div>
-
-                {/* Simulated Collaboration Request Bar */}
-                <div className="flex items-center justify-between gap-3 pt-1">
-                  <div className="text-[11px] text-stone-300 flex items-center gap-1.5">
-                    <Briefcase className="w-3.5 h-3.5 text-[#D9C3A5]" />
-                    <span>Project: <strong>AI Expense Tracker</strong></span>
-                  </div>
-                  <Link
-                    href="/match"
-                    className="text-xs font-bold bg-[#D9C3A5] hover:bg-[#CBB08E] text-[#17231D] px-4 py-2 rounded-full transition-all shadow cursor-pointer"
-                  >
-                    Match Now →
-                  </Link>
+                <div className="w-10 h-10 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center justify-center font-black text-xl">
+                  🚀
                 </div>
               </div>
             </div>

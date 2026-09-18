@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Project } from '@/types';
-import { Users, MessageSquare, Heart, ArrowRight, Sparkles, Tag } from 'lucide-react';
+import { Users, MessageSquare, Heart, ArrowUpRight, Sparkles } from 'lucide-react';
 
 interface ProjectCardProps {
   project: Project;
@@ -25,56 +25,65 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     }
   };
 
+  const typeColors: Record<string, string> = {
+    Hackathon: 'bg-[#FFDE59]',
+    Startup: 'bg-[#FF70A6]',
+    Academic: 'bg-[#4FD1C5]',
+    Personal: 'bg-[#9B87F5]',
+    'Open Source': 'bg-[#38E54D]'
+  };
+
+  const badgeColor = typeColors[project.type] || 'bg-[#FFDE59]';
+
   return (
-    <div className="bg-white border border-[#E8E2D5] rounded-3xl p-6 shadow-[0_8px_24px_rgba(15,61,46,0.06)] hover:shadow-[0_14px_36px_rgba(15,61,46,0.12)] transition-all duration-250 flex flex-col justify-between hover:-translate-y-1 group">
+    <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 shadow-[5px_5px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[7px_7px_0px_0px_#000] transition-all duration-150 flex flex-col justify-between group">
       <div>
-        {/* Top Meta: Owner info + Type tag */}
+        {/* Top Meta: Owner info + Category tag */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3 min-w-0">
             <img
               src={project.ownerAvatar}
               alt={project.ownerName}
-              className="w-10 h-10 rounded-xl object-cover ring-1 ring-stone-200"
+              className="w-10 h-10 rounded-xl object-cover border-2 border-black shadow-[2px_2px_0px_0px_#000]"
             />
             <div className="min-w-0">
-              <div className="text-sm font-bold text-[#0F3D2E] truncate">
+              <div className="text-sm font-black text-black truncate uppercase">
                 {project.ownerName}
               </div>
-              <div className="text-[11px] text-stone-500 truncate">
+              <div className="text-[11px] text-stone-600 truncate font-medium">
                 {project.ownerCollege} · {project.createdAt}
               </div>
             </div>
           </div>
 
-          <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#D9C3A5]/40 text-[#8B6F47] border border-[#D9C3A5]">
+          <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${badgeColor} text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]`}>
             {project.type}
           </span>
         </div>
 
         {/* Project Title & Tagline */}
-        <Link href={`/projects/${project.id}`} className="block group-hover:text-[#2E7058] transition-colors cursor-pointer">
-          <h3 className="text-xl font-bold text-[#0F3D2E] leading-snug mb-1.5 line-clamp-1">
+        <Link href={`/projects/${project.id}`} className="block group-hover:text-[#FF70A6] transition-colors cursor-pointer">
+          <h3 className="text-xl font-black text-black leading-snug mb-1.5 line-clamp-1 uppercase tracking-tight">
             {project.title}
           </h3>
-          <p className="text-xs font-medium text-[#8B6F47] mb-2 line-clamp-1">
+          <p className="text-xs font-bold text-stone-700 mb-2 line-clamp-1">
             {project.tagline}
           </p>
-          <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed mb-4">
+          <p className="text-xs text-stone-700 font-medium line-clamp-3 leading-relaxed mb-4">
             {project.description}
           </p>
         </Link>
 
         {/* Looking For Skill Tags */}
         <div className="mb-4">
-          <div className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-[#2E7058]" />
-            Looking For Roles / Skills
+          <div className="text-[10px] font-black text-black uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <span>★</span> Looking For Skills
           </div>
           <div className="flex flex-wrap gap-1.5">
             {project.requiredSkills.map((skill) => (
               <span
                 key={skill}
-                className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[#2E7058]/10 text-[#0F3D2E] border border-[#2E7058]/20"
+                className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#FAF8F5] text-black border border-black shadow-[1.5px_1.5px_0px_0px_#000]"
               >
                 {skill}
               </span>
@@ -83,19 +92,19 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         </div>
 
         {/* Team Capacity Progress Bar */}
-        <div className="mb-4 p-3 rounded-2xl bg-[#F5F1E6] border border-[#E8E2D5]">
-          <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="text-stone-600 font-medium flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-[#2E7058]" />
-              Team Formation
+        <div className="mb-4 p-3 rounded-xl bg-[#FAF8F5] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+          <div className="flex items-center justify-between text-xs mb-1.5 font-black uppercase">
+            <span className="text-black flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-black" />
+              Team Roster
             </span>
-            <span className="font-bold text-[#0F3D2E]">
+            <span className="bg-black text-[#FFDE59] px-2 py-0.5 rounded text-[10px]">
               {project.currentMembers} / {project.maxMembers} Members
             </span>
           </div>
-          <div className="w-full h-2 rounded-full bg-stone-200 overflow-hidden">
+          <div className="w-full h-3 rounded-full bg-white border-2 border-black overflow-hidden p-0.5">
             <div
-              className="h-full rounded-full bg-[#2E7058]"
+              className="h-full rounded-full bg-[#38E54D] border-r border-black"
               style={{
                 width: `${(project.currentMembers / project.maxMembers) * 100}%`
               }}
@@ -104,18 +113,20 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         </div>
       </div>
 
-      {/* Footer: Likes, Comments count, View Details action */}
-      <div className="flex items-center justify-between pt-3 border-t border-stone-100 text-xs">
-        <div className="flex items-center gap-4 text-stone-500">
+      {/* Footer: Likes, Comments, View Details Button */}
+      <div className="flex items-center justify-between pt-3 border-t-2 border-black text-xs">
+        <div className="flex items-center gap-3 text-black">
           <button
             onClick={handleLike}
-            className={`flex items-center gap-1 font-medium transition-colors cursor-pointer ${
-              hasLiked ? 'text-[#DC2626]' : 'hover:text-[#DC2626]'
+            className={`flex items-center gap-1 font-black px-2.5 py-1 rounded-lg border-2 border-black transition-all cursor-pointer ${
+              hasLiked
+                ? 'bg-[#FF6B6B] text-black shadow-[2px_2px_0px_0px_#000]'
+                : 'bg-white hover:bg-stone-100 shadow-[2px_2px_0px_0px_#000]'
             }`}
           >
             <Heart
-              className={`w-4 h-4 ${
-                hasLiked ? 'fill-[#DC2626] text-[#DC2626]' : ''
+              className={`w-3.5 h-3.5 ${
+                hasLiked ? 'fill-black text-black' : 'text-black'
               }`}
             />
             <span>{likes}</span>
@@ -123,19 +134,19 @@ export default function ProjectCard({ project }: ProjectCardProps) {
 
           <Link
             href={`/projects/${project.id}#comments`}
-            className="flex items-center gap-1 font-medium hover:text-[#0F3D2E] transition-colors"
+            className="flex items-center gap-1 font-black px-2.5 py-1 rounded-lg bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#FFDE59] transition-all"
           >
-            <MessageSquare className="w-4 h-4 text-stone-400" />
+            <MessageSquare className="w-3.5 h-3.5 text-black" />
             <span>{project.comments.length}</span>
           </Link>
         </div>
 
         <Link
           href={`/projects/${project.id}`}
-          className="inline-flex items-center gap-1 font-bold text-[#2E7058] hover:text-[#0F3D2E] transition-colors group-hover:translate-x-0.5 transform duration-150 cursor-pointer"
+          className="inline-flex items-center gap-1 font-black uppercase text-xs px-3.5 py-1.5 rounded-xl bg-[#FFDE59] hover:bg-[#FF70A6] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
         >
-          <span>View Details</span>
-          <ArrowRight className="w-3.5 h-3.5" />
+          <span>Details</span>
+          <ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
       </div>
     </div>
