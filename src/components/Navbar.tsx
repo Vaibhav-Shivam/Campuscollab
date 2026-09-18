@@ -23,7 +23,8 @@ export default function Navbar() {
     { name: 'Projects', href: '/projects' },
     { name: 'AI Matcher', href: '/match', highlight: true },
     { name: 'Events', href: '/events' },
-    { name: 'Dashboard', href: '/dashboard' }
+    { name: 'Dashboard', href: '/dashboard' },
+    { name: 'Deck ↗', href: '/presentation.html', targetBlank: true }
   ];
 
   return (
@@ -56,8 +57,12 @@ export default function Navbar() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-120 flex items-center gap-1 cursor-pointer ${
-                    isActive
+                  target={link.targetBlank ? '_blank' : undefined}
+                  rel={link.targetBlank ? 'noopener noreferrer' : undefined}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-120 flex items-center gap-1 cursor-pointer ${
+                    link.name === 'Deck ↗'
+                      ? 'bg-[#9B87F5] text-black border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:bg-[#8570e6]'
+                      : isActive
                       ? 'bg-[#FFDE59] text-black border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000]'
                       : 'text-black hover:bg-white hover:border-2 hover:border-black hover:shadow-[2px_2px_0px_0px_#000]'
                   }`}
