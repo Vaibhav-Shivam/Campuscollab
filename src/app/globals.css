@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-poppins), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-deep-green: #0F3D2E;
+  --color-forest-green: #2E7058;
+  --color-sage: #A3C9AB;
+  --color-cream: #F5F1E6;
+  --color-sand: #D9C3A5;
+  --color-earth: #8B6F47;
+  --color-dark: #17231D;
+  --color-cream-card: #FFFFFF;
+  --color-cream-border: #E8E2D5;
+}
+
+:root {
+  --font-poppins: 'Poppins', sans-serif;
+  --background: #F5F1E6;
+  --foreground: #17231D;
+  --primary: #0F3D2E;
+  --secondary: #2E7058;
+  --accent: #A3C9AB;
+  --sand: #D9C3A5;
+  --earth: #8B6F47;
+}
+
+html, body {
+  background-color: #F5F1E6;
+  color: #17231D;
+  font-family: var(--font-poppins), sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom utility classes matching the Editorial Nature design system */
+.bg-deep-green {
+  background-color: #0F3D2E;
+}
+
+.bg-forest-green {
+  background-color: #2E7058;
+}
+
+.bg-sage {
+  background-color: #A3C9AB;
+}
+
+.bg-cream {
+  background-color: #F5F1E6;
+}
+
+.bg-sand {
+  background-color: #D9C3A5;
+}
+
+.bg-earth {
+  background-color: #8B6F47;
+}
+
+.text-deep-green {
+  color: #0F3D2E;
+}
+
+.text-forest-green {
+  color: #2E7058;
+}
+
+.text-sage {
+  color: #A3C9AB;
+}
+
+.text-sand {
+  color: #D9C3A5;
+}
+
+.text-earth {
+  color: #8B6F47;
+}
+
+.border-cream {
+  border-color: #E8E2D5;
+}
+
+.border-deep-green {
+  border-color: #1F5341;
+}
+
+.shadow-card-soft {
+  box-shadow: 0 10px 30px -5px rgba(15, 61, 46, 0.08), 0 4px 12px -2px rgba(15, 61, 46, 0.04);
+}
+
+.shadow-card-hover {
+  box-shadow: 0 20px 40px -10px rgba(15, 61, 46, 0.16), 0 8px 16px -4px rgba(15, 61, 46, 0.08);
+}
