@@ -186,3 +186,58 @@ export async function checkDBHealth(): Promise<{ status: 'HEALTHY' | 'DEGRADED';
     return { status: 'DEGRADED', latencyMs: Date.now() - start, table: TABLE_NAME };
   }
 }
+
+export async function findStudentByEmail(email: string): Promise<Student | null> {
+  const { students } = await fetchStudentsFromDB();
+  const normalized = email.trim().toLowerCase();
+  return students.find((s) => s.email.toLowerCase() === normalized) || null;
+}
+
+export async function saveUserAuth(email: string, passwordHash: string, studentId: string): Promise<boolean> {
+  const client = getDocClient();
+  if (!client) return false;
+
+  try {
+    const command = new PutCommand({
+      TableName: TABLE_NAME,
+      Item: {
+        pk: `USER#${email.trim().toLowerCase()}`,
+        sk: 'AUTH',
+        email: email.trim().toLowerCase(),
+        passwordHash,
+        studentId,
+        createdAt: new Date().toISOString()
+      }
+    });
+    await client.send(command);
+    return true;
+  } catch (error) {
+    console.error('[DB] Error saving user auth record:', error);
+    return false;
+  }
+}
+
+export async function getUserAuth(email: string): Promise<{ email: string; passwordHash: string; studentId: string } | null> {
+  const client = getDocClient();
+  if (!client) return null;
+
+  try {
+    const command = new GetCommand({
+      TableName: TABLE_NAME,
+      Key: {
+        pk: `USER#${email.trim().toLowerCase()}`,
+        sk: 'AUTH'
+      }
+    });
+    const res = await client.send(command);
+    if (!res.Item) return null;
+    return {
+      email: res.Item.email,
+      passwordHash: res.Item.passwordHash,
+      studentId: res.Item.studentId
+    };
+  } catch (error) {
+    console.warn('[DB] Error getting user auth record:', error);
+    return null;
+  }
+}

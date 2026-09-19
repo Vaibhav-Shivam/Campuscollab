@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Student, Project, CampusEvent, CollaborationRequest, AIMatchResult, AvailabilityStatus } from '@/types';
 import { initialStudents, initialProjects, initialCampusEvents, initialRequests } from '@/data/mockData';
 import { ToastContainer, ToastMessage } from '@/components/Toast';
+import AuthModal from '@/components/AuthModal';
 
 interface AppContextType {
   currentUser: Student;
@@ -11,6 +12,14 @@ interface AppContextType {
   projects: Project[];
   events: CampusEvent[];
   requests: CollaborationRequest[];
+  isAuthenticated: boolean;
+  authModalOpen: boolean;
+  setAuthModalOpen: (open: boolean) => void;
+  authMode: 'login' | 'signup';
+  setAuthMode: (mode: 'login' | 'signup') => void;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (formData: any) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
   switchUser: (studentId: string) => void;
   updateUserStatus: (status: AvailabilityStatus, lookingForRole?: string) => void;
   createProject: (newProject: Omit<Project, 'id' | 'createdAt' | 'ownerId' | 'ownerName' | 'ownerAvatar' | 'ownerCollege' | 'comments' | 'likesCount'>) => Project;
@@ -29,7 +38,8 @@ const STORAGE_KEYS = {
   PROJECTS: 'campuscollab_projects_v2',
   EVENTS: 'campuscollab_events_v2',
   REQUESTS: 'campuscollab_requests_v2',
-  CURRENT_USER_ID: 'campuscollab_current_user_id_v2'
+  CURRENT_USER_ID: 'campuscollab_current_user_id_v2',
+  AUTH_TOKEN: 'campuscollab_auth_token_v2'
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -38,6 +48,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [events, setEvents] = useState<CampusEvent[]>(initialCampusEvents);
   const [requests, setRequests] = useState<CollaborationRequest[]>(initialRequests);
   const [currentUserId, setCurrentUserId] = useState<string>('student-1');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [isHydrated, setIsHydrated] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -61,12 +74,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const savedEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
       const savedRequests = localStorage.getItem(STORAGE_KEYS.REQUESTS);
       const savedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+      const savedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
 
       if (savedStudents) setStudents(JSON.parse(savedStudents));
       if (savedProjects) setProjects(JSON.parse(savedProjects));
       if (savedEvents) setEvents(JSON.parse(savedEvents));
       if (savedRequests) setRequests(JSON.parse(savedRequests));
       if (savedUserId) setCurrentUserId(savedUserId);
+      setIsAuthenticated(Boolean(savedToken || savedUserId));
     } catch (e) {
       console.warn('LocalStorage hydration error:', e);
     }
@@ -81,6 +96,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             const existingIds = new Set(prev.map(p => p.id));
             const fresh = data.projects.filter((p: Project) => !existingIds.has(p.id));
             return [...fresh, ...prev];
+          });
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/students')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.students) && data.students.length > 0) {
+          setStudents((prev) => {
+            const existingIds = new Set(prev.map(s => s.id));
+            const fresh = data.students.filter((s: Student) => !existingIds.has(s.id));
+            return [...prev, ...fresh];
           });
         }
       })
@@ -103,10 +131,78 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const currentUser = students.find((s) => s.id === currentUserId) || students[0];
 
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Authentication failed.' };
+      }
+
+      const loggedUser: Student = data.user;
+      setStudents((prev) => {
+        if (!prev.some(s => s.id === loggedUser.id)) {
+          return [loggedUser, ...prev];
+        }
+        return prev;
+      });
+
+      setCurrentUserId(loggedUser.id);
+      setIsAuthenticated(true);
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, loggedUser.id);
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token || 'demo-token');
+
+      showToast(`Welcome back, ${loggedUser.name}! 🎉`, 'success', 'You are now signed in.');
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Network error during login.' };
+    }
+  };
+
+  const signup = async (formData: any): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Registration failed.' };
+      }
+
+      const newUser: Student = data.user;
+      setStudents((prev) => [newUser, ...prev]);
+      setCurrentUserId(newUser.id);
+      setIsAuthenticated(true);
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, newUser.id);
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token || 'demo-token');
+
+      showToast(`Welcome to CampusCollab, ${newUser.name}! 🚀`, 'success', 'Your student profile is live.');
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Network error during signup.' };
+    }
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    showToast('Logged out safely', 'info', 'See you next time!');
+  };
+
   const switchUser = (studentId: string) => {
     const target = students.find((s) => s.id === studentId);
     if (target) {
       setCurrentUserId(studentId);
+      setIsAuthenticated(true);
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, studentId);
       showToast(`Switched profile to ${target.name}`, 'info', target.primaryRole);
     }
   };
@@ -147,7 +243,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setProjects((prev) => [created, ...prev]);
     showToast('Project Published! 🚀', 'success', `"${created.title}" is now live for applications.`);
 
-    // Persist to API / DynamoDB
     fetch('/api/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -243,11 +338,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  // Smart Matching AI Engine simulating AWS Bedrock skill extraction & candidate ranking
   const runSmartMatch = (query: string) => {
     const lowerQuery = query.toLowerCase();
 
-    // Known skills catalog for extraction
     const knownSkills = [
       'python', 'react', 'ui/ux', 'figma', 'machine learning', 'fastapi',
       'next.js', 'typescript', 'tailwind css', 'node.js', 'aws', 'video editing',
@@ -258,7 +351,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const extractedNeeded: string[] = [];
     const extractedAvailable: string[] = [];
 
-    // Analyze natural language signals
     knownSkills.forEach((skill) => {
       if (lowerQuery.includes(skill)) {
         if (
@@ -284,7 +376,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const targetSkills = extractedNeeded.length > 0 ? extractedNeeded : (knownSkills.filter(s => lowerQuery.includes(s)));
 
-    // Score all candidates against target skills
     const matches: AIMatchResult[] = students
       .filter((s) => s.id !== currentUser.id)
       .map((student) => {
@@ -347,6 +438,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         projects,
         events,
         requests,
+        isAuthenticated,
+        authModalOpen,
+        setAuthModalOpen,
+        authMode,
+        setAuthMode,
+        login,
+        signup,
+        logout,
         switchUser,
         updateUserStatus,
         createProject,
@@ -359,6 +458,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultMode={authMode}
+      />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </AppContext.Provider>
   );

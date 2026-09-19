@@ -4,12 +4,21 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { PlusCircle, Bell, ChevronDown, Menu, X, Sparkles, UserCheck, ArrowUpRight } from 'lucide-react';
+import { PlusCircle, Bell, ChevronDown, Menu, X, UserCheck, ArrowUpRight, LogIn, UserPlus, LogOut, Shield } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { currentUser, allStudents, switchUser, requests } = useApp();
+  const {
+    currentUser,
+    allStudents,
+    switchUser,
+    requests,
+    isAuthenticated,
+    logout,
+    setAuthModalOpen,
+    setAuthMode
+  } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -77,120 +86,164 @@ export default function Navbar() {
           </nav>
 
           {/* Right Action Area */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Quick Action: Post Project */}
             <Link
               href="/projects?new=true"
-              className="hidden sm:inline-flex items-center gap-1.5 bg-[#FF70A6] hover:bg-[#ff85b3] text-black font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4.5px_4.5px_0px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 bg-[#FF70A6] hover:bg-[#ff85b3] text-black font-black text-xs uppercase tracking-wider px-3.5 py-2 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
             >
               <PlusCircle className="w-4 h-4 text-black" />
               <span>Post Project</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
 
-            {/* Requests Notification Badge */}
-            <Link
-              href="/dashboard#requests"
-              className="relative p-2 rounded-xl bg-white border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:bg-[#FFDE59] transition-all cursor-pointer"
-              title="Collaboration Requests"
-            >
-              <Bell className="w-4 h-4 text-black" />
-              {pendingRequests.length > 0 && (
-                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#FF6B6B] border-1.5 border-black text-[10px] font-black text-black shadow-[1px_1px_0px_0px_#000]">
-                  {pendingRequests.length}
-                </span>
-              )}
-            </Link>
-
-            {/* User Persona Switcher Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 p-1.5 pr-2.5 rounded-xl bg-white border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:bg-stone-50 transition-all cursor-pointer"
-                title="Switch active student persona"
-              >
-                <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
-                  className="w-7 h-7 rounded-lg object-cover border border-black"
-                />
-                <span className="text-xs font-black text-black hidden lg:inline-block max-w-[90px] truncate">
-                  {currentUser.name}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 text-black" />
-              </button>
-
-              {userMenuOpen && (
-                <div
-                  className="absolute right-0 mt-2 w-72 bg-white text-black rounded-2xl border-2 border-black shadow-[6px_6px_0px_0px_#000] py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-120"
-                  onMouseLeave={() => setUserMenuOpen(false)}
+            {isAuthenticated ? (
+              <>
+                {/* Requests Notification Badge */}
+                <Link
+                  href="/dashboard#requests"
+                  className="relative p-2 rounded-xl bg-white border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:bg-[#FFDE59] transition-all cursor-pointer"
+                  title="Collaboration Requests"
                 >
-                  <div className="px-4 pb-3 border-b-2 border-black bg-[#FAF8F5]">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Signed in as</div>
-                    <div className="font-black text-black text-sm mt-0.5">{currentUser.name}</div>
-                    <div className="text-xs font-medium text-stone-600 truncate">{currentUser.primaryRole}</div>
-                    <div className="mt-2">
-                      <StatusBadge status={currentUser.status} size="sm" />
-                    </div>
-                  </div>
+                  <Bell className="w-4 h-4 text-black" />
+                  {pendingRequests.length > 0 && (
+                    <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#FF6B6B] border-1.5 border-black text-[10px] font-black text-black shadow-[1px_1px_0px_0px_#000]">
+                      {pendingRequests.length}
+                    </span>
+                  )}
+                </Link>
 
-                  {/* Switch Persona section */}
-                  <div className="px-4 pt-3 pb-1">
-                    <div className="text-[10px] font-black uppercase tracking-wider text-black flex items-center gap-1">
-                      <UserCheck className="w-3.5 h-3.5" />
-                      Switch Demo Persona
-                    </div>
-                  </div>
+                {/* User Profile / Menu Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2 p-1.5 pr-2.5 rounded-xl bg-white border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:bg-stone-50 transition-all cursor-pointer"
+                    title="User account & profile"
+                  >
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name}
+                      className="w-7 h-7 rounded-lg object-cover border border-black"
+                    />
+                    <span className="text-xs font-black text-black hidden lg:inline-block max-w-[90px] truncate">
+                      {currentUser.name}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-black" />
+                  </button>
 
-                  <div className="max-h-56 overflow-y-auto px-2 space-y-1">
-                    {allStudents.map((student) => (
-                      <button
-                        key={student.id}
-                        onClick={() => {
-                          switchUser(student.id);
-                          setUserMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left text-xs transition-all cursor-pointer border ${
-                          student.id === currentUser.id
-                            ? 'bg-[#FFDE59] text-black font-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
-                            : 'border-transparent hover:bg-stone-100 hover:border-black text-black'
-                        }`}
-                      >
-                        <img
-                          src={student.avatar}
-                          alt={student.name}
-                          className="w-6 h-6 rounded-md object-cover border border-black"
-                        />
-                        <div className="flex-1 truncate">
-                          <div className="truncate font-bold">{student.name}</div>
-                          <div className="text-[10px] text-stone-600 truncate">
-                            {student.primaryRole}
-                          </div>
-                        </div>
-                        {student.id === currentUser.id && (
-                          <span className="w-2 h-2 rounded-full bg-black"></span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="border-t-2 border-black mt-2 pt-2 px-3">
-                    <Link
-                      href={`/students/${currentUser.id}`}
-                      onClick={() => setUserMenuOpen(false)}
-                      className="block text-center text-xs text-black font-black py-1.5 rounded-lg bg-[#4FD1C5] border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#38E54D] cursor-pointer"
+                  {userMenuOpen && (
+                    <div
+                      className="absolute right-0 mt-2 w-72 bg-white text-black rounded-2xl border-2 border-black shadow-[6px_6px_0px_0px_#000] py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-120"
+                      onMouseLeave={() => setUserMenuOpen(false)}
                     >
-                      View Full Profile & Proofs →
-                    </Link>
-                  </div>
+                      <div className="px-4 pb-3 border-b-2 border-black bg-[#FAF8F5]">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Signed in as</div>
+                        <div className="font-black text-black text-sm mt-0.5">{currentUser.name}</div>
+                        <div className="text-xs font-medium text-stone-600 truncate">{currentUser.primaryRole}</div>
+                        <div className="mt-2">
+                          <StatusBadge status={currentUser.status} size="sm" />
+                        </div>
+                      </div>
+
+                      {/* Switch Persona section */}
+                      <div className="px-4 pt-3 pb-1">
+                        <div className="text-[10px] font-black uppercase tracking-wider text-black flex items-center gap-1">
+                          <UserCheck className="w-3.5 h-3.5" />
+                          Switch Demo Persona
+                        </div>
+                      </div>
+
+                      <div className="max-h-48 overflow-y-auto px-2 space-y-1">
+                        {allStudents.map((student) => (
+                          <button
+                            key={student.id}
+                            onClick={() => {
+                              switchUser(student.id);
+                              setUserMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left text-xs transition-all cursor-pointer border ${
+                              student.id === currentUser.id
+                                ? 'bg-[#FFDE59] text-black font-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+                                : 'border-transparent hover:bg-stone-100 hover:border-black text-black'
+                            }`}
+                          >
+                            <img
+                              src={student.avatar}
+                              alt={student.name}
+                              className="w-6 h-6 rounded-md object-cover border border-black"
+                            />
+                            <div className="flex-1 truncate">
+                              <div className="truncate font-bold">{student.name}</div>
+                              <div className="text-[10px] text-stone-600 truncate">
+                                {student.primaryRole}
+                              </div>
+                            </div>
+                            {student.id === currentUser.id && (
+                              <span className="w-2 h-2 rounded-full bg-black"></span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="border-t-2 border-black mt-2 pt-2 px-3 space-y-1.5">
+                        <Link
+                          href={`/students/${currentUser.id}`}
+                          onClick={() => setUserMenuOpen(false)}
+                          className="block text-center text-xs text-black font-black py-1.5 rounded-lg bg-[#4FD1C5] border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#38E54D] cursor-pointer"
+                        >
+                          View Full Profile & Proofs →
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            logout();
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-stone-100 hover:bg-[#FF6B6B] text-black text-xs font-bold border border-black transition-colors cursor-pointer"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          Log Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              /* Logged Out Actions */
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white border-2 border-black text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] hover:bg-[#FFDE59] transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Log In</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setAuthModalOpen(true);
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#38E54D] border-2 border-black text-xs font-black uppercase tracking-wider shadow-[2.5px_2.5px_0px_0px_#000] hover:bg-[#2ed642] hover:-translate-y-0.5 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Sign Up</span>
+                </button>
+              </div>
+            )}
 
             {/* Mobile Hamburger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] text-black cursor-pointer"
+              aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -211,15 +264,51 @@ export default function Navbar() {
               {link.name}
             </Link>
           ))}
-          <div className="pt-2">
+
+          <div className="pt-2 space-y-2 border-t border-stone-200">
             <Link
               href="/projects?new=true"
               onClick={() => setMobileMenuOpen(false)}
               className="w-full inline-flex justify-center items-center gap-2 bg-[#FF70A6] text-black font-black py-2.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] text-xs uppercase"
             >
               <PlusCircle className="w-4 h-4 text-black" />
-              Post a Project
+              <span>Post New Project</span>
             </Link>
+
+            {!isAuthenticated ? (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthModalOpen(true);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="py-2.5 text-center text-xs font-black uppercase tracking-wider bg-white border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000]"
+                >
+                  Log In
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setAuthModalOpen(true);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="py-2.5 text-center text-xs font-black uppercase tracking-wider bg-[#38E54D] border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000]"
+                >
+                  Sign Up
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  logout();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-2 text-center text-xs font-bold text-red-600 bg-red-50 border border-red-300 rounded-xl"
+              >
+                Sign Out ({currentUser.name})
+              </button>
+            )}
           </div>
         </div>
       )}
