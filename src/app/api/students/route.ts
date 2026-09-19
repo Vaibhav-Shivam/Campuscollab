@@ -15,22 +15,35 @@ export async function GET(request: Request) {
     let results = [...students];
 
     if (search) {
-      results = results.filter((s) =>
-        s.name.toLowerCase().includes(search) ||
-        s.primaryRole.toLowerCase().includes(search) ||
-        s.college.toLowerCase().includes(search) ||
-        s.skills.some((sk) => sk.name.toLowerCase().includes(search))
-      );
+      results = results.filter((s) => {
+        const safeSkills = (s.skills || []).map((sk) =>
+          typeof sk === 'string' ? sk : sk?.name || ''
+        );
+        const safeProofs = s.proofs || [];
+        return (
+          (s.name || '').toLowerCase().includes(search) ||
+          (s.primaryRole || '').toLowerCase().includes(search) ||
+          (s.college || '').toLowerCase().includes(search) ||
+          (s.major || '').toLowerCase().includes(search) ||
+          (s.bio || '').toLowerCase().includes(search) ||
+          safeSkills.some((sk) => sk.toLowerCase().includes(search)) ||
+          safeProofs.some((p) => (p.title || '').toLowerCase().includes(search)) ||
+          (s.interests || []).some((i) => i.toLowerCase().includes(search))
+        );
+      });
     }
 
     if (skill) {
-      results = results.filter((s) =>
-        s.skills.some((sk) => sk.name.toLowerCase().includes(skill))
-      );
+      results = results.filter((s) => {
+        const safeSkills = (s.skills || []).map((sk) =>
+          typeof sk === 'string' ? sk : sk?.name || ''
+        );
+        return safeSkills.some((sk) => sk.toLowerCase().includes(skill));
+      });
     }
 
     if (status && status !== 'all') {
-      results = results.filter((s) => s.status === status);
+      results = results.filter((s) => (s.status || 'available').toLowerCase() === status.toLowerCase());
     }
 
     return NextResponse.json({
@@ -40,7 +53,9 @@ export async function GET(request: Request) {
       students: results
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=59'
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
   } catch (error) {

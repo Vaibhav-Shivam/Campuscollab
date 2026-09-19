@@ -1,15 +1,28 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import StudentCard from '@/components/StudentCard';
-import { Search, Filter, Sparkles, Users } from 'lucide-react';
+import { Search, Filter, Sparkles, Users, RotateCw } from 'lucide-react';
+import { matchesStudentCategory } from '@/lib/categorize';
 
 export default function ExploreStudentsPage() {
-  const { allStudents } = useApp();
+  const { allStudents, refreshStudents } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'available' | 'looking'>('all');
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Sync latest profiles from cloud on mount
+  useEffect(() => {
+    refreshStudents();
+  }, [refreshStudents]);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    await refreshStudents();
+    setTimeout(() => setIsSyncing(false), 600);
+  };
 
   const categories = [
     'All',
@@ -23,21 +36,36 @@ export default function ExploreStudentsPage() {
   const filteredStudents = useMemo(() => {
     return allStudents.filter((student) => {
       const q = searchQuery.toLowerCase().trim();
+
+      // Safe normalization of skills and proofs
+      const safeSkills = (student.skills || []).map((sk) =>
+        typeof sk === 'string' ? sk : sk?.name || ''
+      );
+      const safeProofs = Array.isArray(student.proofs) ? student.proofs : [];
+      const safeInterests = Array.isArray(student.interests) ? student.interests : [];
+
       const matchesQuery =
         !q ||
-        student.name.toLowerCase().includes(q) ||
-        student.primaryRole.toLowerCase().includes(q) ||
-        student.college.toLowerCase().includes(q) ||
-        student.bio.toLowerCase().includes(q) ||
-        student.skills.some((sk) => sk.name.toLowerCase().includes(q)) ||
-        student.proofs.some((p) => p.title.toLowerCase().includes(q));
+        (student.name || '').toLowerCase().includes(q) ||
+        (student.primaryRole || '').toLowerCase().includes(q) ||
+        (student.college || '').toLowerCase().includes(q) ||
+        (student.major || '').toLowerCase().includes(q) ||
+        (student.bio || '').toLowerCase().includes(q) ||
+        (student.lookingForRole || '').toLowerCase().includes(q) ||
+        safeSkills.some((skName) => skName.toLowerCase().includes(q)) ||
+        safeProofs.some((p) =>
+          (p.title || '').toLowerCase().includes(q) ||
+          (p.description || '').toLowerCase().includes(q) ||
+          (p.role || '').toLowerCase().includes(q) ||
+          (p.technologies || []).some((t) => t.toLowerCase().includes(q))
+        ) ||
+        safeInterests.some((i) => i.toLowerCase().includes(q));
 
-      const matchesCategory =
-        selectedCategory === 'All' ||
-        student.skills.some((sk) => sk.category.toLowerCase() === selectedCategory.toLowerCase());
+      const matchesCategory = matchesStudentCategory(student, selectedCategory);
 
       const matchesStatus =
-        selectedStatus === 'all' || student.status === selectedStatus;
+        selectedStatus === 'all' ||
+        (student.status || 'available').toLowerCase() === selectedStatus.toLowerCase();
 
       return matchesQuery && matchesCategory && matchesStatus;
     });
@@ -144,9 +172,20 @@ export default function ExploreStudentsPage() {
         </div>
 
         {/* Results Metadata */}
-        <div className="flex items-center justify-between text-xs font-black text-black px-1 uppercase">
-          <div>
-            Showing <strong>{filteredStudents.length}</strong> student{filteredStudents.length === 1 ? '' : 's'} on campus
+        <div className="flex flex-wrap items-center justify-between text-xs font-black text-black px-1 uppercase gap-3">
+          <div className="flex items-center gap-3">
+            <span>
+              Showing <strong>{filteredStudents.length}</strong> student{filteredStudents.length === 1 ? '' : 's'} on campus
+            </span>
+            <button
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase bg-white hover:bg-[#FFDE59] px-2.5 py-1 rounded-lg border border-black shadow-[1.5px_1.5px_0px_0px_#000] cursor-pointer active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+              title="Sync latest students from database"
+            >
+              <RotateCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
+            </button>
           </div>
           {(searchQuery || selectedCategory !== 'All' || selectedStatus !== 'all') && (
             <button

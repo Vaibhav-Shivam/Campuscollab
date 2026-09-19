@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { findStudentByEmail, saveStudentToDB, saveUserAuth } from '@/lib/db';
 import { Student } from '@/types';
+import { inferSkillCategory } from '@/lib/categorize';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,12 +49,20 @@ export async function POST(request: Request) {
     const studentId = `student-${Date.now()}`;
     const passwordHash = hashPassword(password);
 
-    // Format skills array
-    const parsedSkills = Array.isArray(skills)
-      ? skills.map((s: string | { name: string; level: number; category: string }) =>
-          typeof s === 'string' ? { name: s, level: 4, category: 'General' } : s
-        )
-      : [{ name: 'Collaboration', level: 4, category: 'General' }];
+    // Format and intelligently categorize skills
+    const parsedSkills = Array.isArray(skills) && skills.length > 0
+      ? skills.map((s: string | { name: string; level: number; category: string }) => {
+          const skillName = typeof s === 'string' ? s.trim() : (s?.name || '').trim();
+          const skillCat = typeof s === 'object' && s?.category && s.category !== 'General'
+            ? s.category
+            : inferSkillCategory(skillName);
+          return {
+            name: skillName,
+            level: typeof s === 'object' && s?.level ? s.level : 4,
+            category: skillCat
+          };
+        })
+      : [{ name: primaryRole ? primaryRole.trim() : 'Software Engineering', level: 4, category: inferSkillCategory(primaryRole || 'Development') }];
 
     const newStudent: Student = {
       id: studentId,

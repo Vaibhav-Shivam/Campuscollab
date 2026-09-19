@@ -16,6 +16,15 @@ interface StudentCardProps {
 export default function StudentCard({ student, matchScore, highlightReason }: StudentCardProps) {
   const [showCollabModal, setShowCollabModal] = useState(false);
 
+  const safeProofs = Array.isArray(student.proofs) ? student.proofs : [];
+  const safeSkills = Array.isArray(student.skills)
+    ? student.skills.map((sk) =>
+        typeof sk === 'string'
+          ? { name: sk, level: 4, category: 'General' }
+          : { name: sk?.name || '', level: sk?.level || 4, category: sk?.category || 'General' }
+      )
+    : [];
+
   return (
     <>
       <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 shadow-[5px_5px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[7px_7px_0px_0px_#000] transition-all duration-150 flex flex-col justify-between group relative">
@@ -32,11 +41,11 @@ export default function StudentCard({ student, matchScore, highlightReason }: St
           <div className="flex items-start gap-4 mb-4">
             <div className="relative">
               <img
-                src={student.avatar}
+                src={student.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(student.name || 'User')}`}
                 alt={student.name}
                 className="w-14 h-14 rounded-xl object-cover border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000]"
               />
-              {student.proofs.length > 0 && (
+              {safeProofs.length > 0 && (
                 <span
                   className="absolute -bottom-1 -right-1 bg-[#FFDE59] text-black border-1.5 border-black p-1 rounded-full shadow-[1px_1px_0px_0px_#000]"
                   title="Verified Project Proofs Available"
@@ -64,7 +73,7 @@ export default function StudentCard({ student, matchScore, highlightReason }: St
 
           {/* Status Indicator */}
           <div className="mb-4">
-            <StatusBadge status={student.status} size="sm" />
+            <StatusBadge status={student.status || 'available'} size="sm" />
           </div>
 
           {/* AI Match Reason snippet if applicable */}
@@ -77,7 +86,7 @@ export default function StudentCard({ student, matchScore, highlightReason }: St
 
           {/* Bio preview */}
           <p className="text-xs text-stone-700 font-medium line-clamp-2 leading-relaxed mb-4">
-            {student.bio}
+            {student.bio || 'Campus collaborator ready to build.'}
           </p>
 
           {/* Skills Badges */}
@@ -86,17 +95,17 @@ export default function StudentCard({ student, matchScore, highlightReason }: St
               Skills & Stack
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {student.skills.slice(0, 4).map((skill) => (
+              {safeSkills.slice(0, 4).map((skill, idx) => (
                 <span
-                  key={skill.name}
+                  key={skill.name || idx}
                   className="bg-[#FAF8F5] text-black text-xs font-bold px-2.5 py-1 rounded-lg border border-black shadow-[1.5px_1.5px_0px_0px_#000]"
                 >
                   {skill.name}
                 </span>
               ))}
-              {student.skills.length > 4 && (
+              {safeSkills.length > 4 && (
                 <span className="text-[11px] font-bold text-black self-center pl-1">
-                  +{student.skills.length - 4} more
+                  +{safeSkills.length - 4} more
                 </span>
               )}
             </div>

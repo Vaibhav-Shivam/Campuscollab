@@ -30,6 +30,7 @@ interface AppContextType {
   toggleEventRegistration: (eventId: string) => void;
   runSmartMatch: (query: string) => { neededSkills: string[]; availableSkills: string[]; matches: AIMatchResult[] };
   showToast: (title: string, type?: 'success' | 'error' | 'info', description?: string) => void;
+  refreshStudents: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -67,6 +68,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }, 4500);
   }, [dismissToast]);
 
+  const refreshStudents = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/students?_t=${Date.now()}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.students) && data.students.length > 0) {
+        setStudents((prev) => {
+          const dbStudentMap = new Map(data.students.map((s: Student) => [s.id, s]));
+          // 1. Update existing students with fresh data from database
+          const updatedExisting = prev.map((s) => dbStudentMap.get(s.id) || s);
+          // 2. Identify brand new students from DynamoDB
+          const existingIds = new Set(prev.map((s) => s.id));
+          const brandNew = data.students.filter((s: Student) => !existingIds.has(s.id));
+          // 3. New real signups placed at the front so they are immediately visible
+          return [...brandNew, ...updatedExisting];
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to refresh students from cloud:', err);
+    }
+  }, []);
+
   // Hydrate from localStorage on mount & sync with API
   useEffect(() => {
     try {
@@ -102,19 +124,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {});
 
-    fetch('/api/students')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && Array.isArray(data.students) && data.students.length > 0) {
-          setStudents((prev) => {
-            const existingIds = new Set(prev.map(s => s.id));
-            const fresh = data.students.filter((s: Student) => !existingIds.has(s.id));
-            return [...prev, ...fresh];
-          });
-        }
-      })
-      .catch(() => {});
-  }, []);
+    refreshStudents();
+  }, [refreshStudents]);
 
   // Save to localStorage on state changes once hydrated
   useEffect(() => {
@@ -492,7 +503,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         respondToRequest,
         toggleEventRegistration,
         runSmartMatch,
-        showToast
+        showToast,
+        refreshStudents
       }}
     >
       {children}

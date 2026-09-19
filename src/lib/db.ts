@@ -2,6 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { initialStudents, initialProjects, initialCampusEvents } from '@/data/mockData';
 import { Student, Project, CampusEvent } from '@/types';
+import { inferSkillCategory } from '@/lib/categorize';
 
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'workshop-campuscollab-db';
 const REGION = process.env.AWS_DEFAULT_REGION || process.env.AWS_REGION || 'us-east-1';
@@ -40,7 +41,7 @@ export async function fetchStudentsFromDB(): Promise<{ students: Student[]; sour
   try {
     const command = new ScanCommand({
       TableName: TABLE_NAME,
-      Limit: 50
+      Limit: 200
     });
     const response = await client.send(command);
     const items = (response.Items || []).filter((it) => (it.pk as string)?.startsWith('STUDENT#'));
@@ -61,21 +62,33 @@ export async function fetchStudentsFromDB(): Promise<{ students: Student[]; sour
       bio: it.bio || 'Campus collaborator ready to build.',
       status: it.status || 'available',
       lookingForRole: it.lookingForRole,
-      skills: Array.isArray(it.skills) ? it.skills.map((s: string | { name: string; level: number; category: string }) => 
-        typeof s === 'string' ? { name: s, level: 4, category: 'General' } : s
-      ) : [],
+      skills: Array.isArray(it.skills) ? it.skills.map((s: string | { name: string; level: number; category: string }) => {
+        if (typeof s === 'string') {
+          return { name: s, level: 4, category: inferSkillCategory(s) };
+        }
+        return {
+          name: s.name || '',
+          level: s.level || 4,
+          category: s.category && s.category !== 'General' ? s.category : inferSkillCategory(s.name || '')
+        };
+      }) : [],
       projectCount: it.projectCount || 0,
       hackathonCount: it.hackathonCount || 0,
       email: it.email || 'student@campuscollab.edu',
-      interests: it.interests || ['Hackathons', 'Tech'],
-      proofs: it.proofs || [],
+      interests: Array.isArray(it.interests) ? it.interests : ['Hackathons', 'Tech'],
+      proofs: Array.isArray(it.proofs) ? it.proofs : [],
       githubUrl: it.githubUrl,
       portfolioUrl: it.portfolioUrl,
       linkedinUrl: it.linkedinUrl,
       figmaUrl: it.figmaUrl
     }));
 
-    return { students, source: 'dynamodb' };
+    // Merge DB students with initialStudents ensuring initial students remain visible if not in DB
+    const dbStudentIds = new Set(students.map((s) => s.id));
+    const missingMock = initialStudents.filter((s) => !dbStudentIds.has(s.id));
+    const allStudentsList = [...students, ...missingMock];
+
+    return { students: allStudentsList, source: 'dynamodb' };
   } catch (error) {
     console.warn('[DB] Error scanning students from DynamoDB, serving mock data:', error);
     return { students: initialStudents, source: 'fallback' };
