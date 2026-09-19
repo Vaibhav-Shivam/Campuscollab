@@ -15,6 +15,7 @@ export default function Navbar() {
     switchUser,
     requests,
     isAuthenticated,
+    isAdmin,
     logout,
     setAuthModalOpen,
     setAuthMode
@@ -128,6 +129,11 @@ export default function Navbar() {
                     <span className="text-xs font-black text-black hidden lg:inline-block max-w-[90px] truncate">
                       {currentUser.name}
                     </span>
+                    {isAdmin && (
+                      <span className="hidden sm:inline-flex text-[9px] font-black uppercase tracking-wider bg-[#FFDE59] text-black px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_0px_#000]">
+                        Admin 👑
+                      </span>
+                    )}
                     <ChevronDown className="w-3.5 h-3.5 text-black" />
                   </button>
 
@@ -137,7 +143,14 @@ export default function Navbar() {
                       onMouseLeave={() => setUserMenuOpen(false)}
                     >
                       <div className="px-4 pb-3 border-b-2 border-black bg-[#FAF8F5]">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Signed in as</div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Signed in as</div>
+                          {isAdmin && (
+                            <span className="text-[9px] font-black uppercase tracking-wider bg-[#FFDE59] border border-black rounded px-1.5 py-0.5 shadow-[1px_1px_0px_0px_#000]">
+                              Admin 👑
+                            </span>
+                          )}
+                        </div>
                         <div className="font-black text-black text-sm mt-0.5">{currentUser.name}</div>
                         <div className="text-xs font-medium text-stone-600 truncate">{currentUser.primaryRole}</div>
                         <div className="mt-2">
@@ -145,45 +158,52 @@ export default function Navbar() {
                         </div>
                       </div>
 
-                      {/* Switch Persona section */}
-                      <div className="px-4 pt-3 pb-1">
-                        <div className="text-[10px] font-black uppercase tracking-wider text-black flex items-center gap-1">
-                          <UserCheck className="w-3.5 h-3.5" />
-                          Switch Demo Persona
-                        </div>
-                      </div>
-
-                      <div className="max-h-48 overflow-y-auto px-2 space-y-1">
-                        {allStudents.map((student) => (
-                          <button
-                            key={student.id}
-                            onClick={() => {
-                              switchUser(student.id);
-                              setUserMenuOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left text-xs transition-all cursor-pointer border ${
-                              student.id === currentUser.id
-                                ? 'bg-[#FFDE59] text-black font-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
-                                : 'border-transparent hover:bg-stone-100 hover:border-black text-black'
-                            }`}
-                          >
-                            <img
-                              src={student.avatar}
-                              alt={student.name}
-                              className="w-6 h-6 rounded-md object-cover border border-black"
-                            />
-                            <div className="flex-1 truncate">
-                              <div className="truncate font-bold">{student.name}</div>
-                              <div className="text-[10px] text-stone-600 truncate">
-                                {student.primaryRole}
-                              </div>
+                      {/* Switch Persona section - ONLY VISIBLE TO ADMIN */}
+                      {isAdmin && (
+                        <>
+                          <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+                            <div className="text-[10px] font-black uppercase tracking-wider text-black flex items-center gap-1">
+                              <UserCheck className="w-3.5 h-3.5 text-[#FF70A6]" />
+                              Switch Demo Persona
                             </div>
-                            {student.id === currentUser.id && (
-                              <span className="w-2 h-2 rounded-full bg-black"></span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
+                            <span className="text-[9px] font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-300">
+                              Admin Only
+                            </span>
+                          </div>
+
+                          <div className="max-h-48 overflow-y-auto px-2 space-y-1">
+                            {allStudents.map((student) => (
+                              <button
+                                key={student.id}
+                                onClick={() => {
+                                  switchUser(student.id);
+                                  setUserMenuOpen(false);
+                                }}
+                                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left text-xs transition-all cursor-pointer border ${
+                                  student.id === currentUser.id
+                                    ? 'bg-[#FFDE59] text-black font-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+                                    : 'border-transparent hover:bg-stone-100 hover:border-black text-black'
+                                }`}
+                              >
+                                <img
+                                  src={student.avatar}
+                                  alt={student.name}
+                                  className="w-6 h-6 rounded-md object-cover border border-black"
+                                />
+                                <div className="flex-1 truncate">
+                                  <div className="truncate font-bold">{student.name}</div>
+                                  <div className="text-[10px] text-stone-600 truncate">
+                                    {student.primaryRole}
+                                  </div>
+                                </div>
+                                {student.id === currentUser.id && (
+                                  <span className="w-2 h-2 rounded-full bg-black"></span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
 
                       <div className="border-t-2 border-black mt-2 pt-2 px-3 space-y-1.5">
                         <Link
@@ -193,6 +213,16 @@ export default function Navbar() {
                         >
                           View Full Profile & Proofs →
                         </Link>
+
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="block text-center text-xs text-black font-black py-1.5 rounded-lg bg-[#FFDE59] border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ebcd4a] cursor-pointer"
+                          >
+                            👑 Admin Control Portal →
+                          </Link>
+                        )}
 
                         <button
                           type="button"

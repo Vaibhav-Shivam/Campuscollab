@@ -7,14 +7,15 @@ import { X, LogIn, UserPlus, Sparkles, AlertCircle, ShieldCheck } from 'lucide-r
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultMode?: 'login' | 'signup';
+  defaultMode?: 'login' | 'signup' | 'admin';
 }
 
 export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalProps) {
-  const { allStudents, login, signup, showToast } = useApp();
-  const [mode, setMode] = useState<'login' | 'signup'>(defaultMode);
+  const { login, signup, loginAsAdmin, showToast } = useApp();
+  const [mode, setMode] = useState<'login' | 'signup' | 'admin'>(defaultMode);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [adminPasskey, setAdminPasskey] = useState('');
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -83,18 +84,14 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
     }
   };
 
-  const handleQuickDemoLogin = async (email: string) => {
-    setLoading(true);
+  const handleAdminSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     setErrorMessage('');
-    try {
-      const res = await login(email, 'password123');
-      if (res.success) {
-        onClose();
-      }
-    } catch (err: any) {
-      setErrorMessage('Failed to sign in as demo user.');
-    } finally {
-      setLoading(false);
+    const res = loginAsAdmin(adminPasskey);
+    if (res.success) {
+      onClose();
+    } else {
+      setErrorMessage(res.error || 'Invalid Admin Passkey.');
     }
   };
 
@@ -126,51 +123,71 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
 
         {/* Modal Title */}
         <h2 className="text-2xl font-black tracking-tight mb-1">
-          {mode === 'login' ? 'Welcome Back, Creator' : 'Create Your Student Profile'}
+          {mode === 'login' && 'Welcome Back, Creator'}
+          {mode === 'signup' && 'Create Your Student Profile'}
+          {mode === 'admin' && 'Platform Admin Portal'}
         </h2>
         <p className="text-xs font-medium text-neutral-600 mb-6">
-          {mode === 'login'
-            ? 'Sign in to access your projects, messages, and team requests.'
-            : 'Join verified student collaborators building real projects & hackathons.'}
+          {mode === 'login' && 'Sign in to access your projects, messages, and team requests.'}
+          {mode === 'signup' && 'Join verified student collaborators building real projects & hackathons.'}
+          {mode === 'admin' && 'Enter your secret Administrator passkey to unlock administrative features.'}
         </p>
 
         {/* Mode Toggle Tabs */}
-        <div className="grid grid-cols-2 gap-2 p-1.5 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] mb-6">
-          <button
-            type="button"
-            onClick={() => {
-              setMode('login');
-              setErrorMessage('');
-            }}
-            className={`py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
-              mode === 'login'
-                ? 'bg-[#FFDE59] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
-                : 'text-neutral-600 hover:text-black'
-            }`}
-          >
-            <div className="flex items-center justify-center gap-1.5">
-              <LogIn className="w-3.5 h-3.5" />
-              Log In
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode('signup');
-              setErrorMessage('');
-            }}
-            className={`py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
-              mode === 'signup'
-                ? 'bg-[#FF70A6] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
-                : 'text-neutral-600 hover:text-black'
-            }`}
-          >
-            <div className="flex items-center justify-center gap-1.5">
-              <UserPlus className="w-3.5 h-3.5" />
-              Sign Up
-            </div>
-          </button>
-        </div>
+        {mode !== 'admin' ? (
+          <div className="grid grid-cols-2 gap-2 p-1.5 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setErrorMessage('');
+              }}
+              className={`py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                mode === 'login'
+                  ? 'bg-[#FFDE59] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+                  : 'text-neutral-600 hover:text-black'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-1.5">
+                <LogIn className="w-3.5 h-3.5" />
+                Log In
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signup');
+                setErrorMessage('');
+              }}
+              className={`py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                mode === 'signup'
+                  ? 'bg-[#FF70A6] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+                  : 'text-neutral-600 hover:text-black'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-1.5">
+                <UserPlus className="w-3.5 h-3.5" />
+                Sign Up
+              </div>
+            </button>
+          </div>
+        ) : (
+          <div className="mb-6 flex items-center justify-between bg-black text-white p-2.5 rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+            <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5 pl-2">
+              <span>👑</span> Administrator Verification
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setErrorMessage('');
+              }}
+              className="text-xs font-bold bg-white text-black px-2.5 py-1 rounded-lg border border-black hover:bg-[#FFDE59] cursor-pointer"
+            >
+              Back to Login
+            </button>
+          </div>
+        )}
 
         {/* Error Banner */}
         {errorMessage && (
@@ -341,36 +358,50 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
           </form>
         )}
 
-        {/* 1-Click Quick Demo Sign In */}
-        <div className="mt-6 pt-5 border-t-2 border-black border-dashed">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-black uppercase tracking-wider text-neutral-600 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-[#9B87F5]" />
-              Quick Demo Login (1-Click)
-            </span>
-            <span className="text-[10px] bg-stone-200 px-2 py-0.5 rounded font-bold">No password needed</span>
-          </div>
+        {/* Admin Form */}
+        {mode === 'admin' && (
+          <form onSubmit={handleAdminSubmit} className="space-y-4">
+            <div className="p-3 bg-[#FFDE59]/25 border-2 border-black rounded-xl text-xs font-bold text-black flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#38E54D] shrink-0" />
+              <span>Only authorized administrators may switch demo personas or manage platform settings.</span>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {allStudents.slice(0, 3).map((std) => (
-              <button
-                key={std.id}
-                type="button"
-                onClick={() => handleQuickDemoLogin(std.email)}
-                className="flex items-center gap-2 p-2 bg-white hover:bg-[#FFDE59] border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] text-left transition-all cursor-pointer truncate"
-              >
-                <img
-                  src={std.avatar}
-                  alt={std.name}
-                  className="w-6 h-6 rounded-md object-cover border border-black shrink-0"
-                />
-                <div className="truncate">
-                  <div className="text-[11px] font-black leading-tight truncate">{std.name.split(' ')[0]}</div>
-                  <div className="text-[9px] text-neutral-600 truncate">{std.primaryRole.split(' ')[0]}</div>
-                </div>
-              </button>
-            ))}
-          </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                Admin Passkey
+              </label>
+              <input
+                type="password"
+                required
+                value={adminPasskey}
+                onChange={(e) => setAdminPasskey(e.target.value)}
+                placeholder="Enter secret admin passkey..."
+                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 bg-[#FFDE59] hover:bg-[#ebd04f] text-black font-black text-sm uppercase tracking-wider border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_#000] transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>Unlock Administrator Access 👑</span>
+            </button>
+          </form>
+        )}
+
+        {/* Discreet Admin Portal Link */}
+        <div className="mt-6 pt-3 border-t border-stone-200 text-center">
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === 'admin' ? 'login' : 'admin');
+              setErrorMessage('');
+            }}
+            className="text-[11px] font-bold text-stone-400 hover:text-black transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <ShieldCheck className="w-3 h-3" />
+            <span>{mode === 'admin' ? '← Back to Student Sign In' : 'Platform Administrator Portal'}</span>
+          </button>
         </div>
       </div>
     </div>

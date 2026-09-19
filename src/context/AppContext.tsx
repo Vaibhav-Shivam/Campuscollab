@@ -32,6 +32,8 @@ interface AppContextType {
   showToast: (title: string, type?: 'success' | 'error' | 'info', description?: string) => void;
   refreshStudents: () => Promise<void>;
   isRefreshingStudents: boolean;
+  isAdmin: boolean;
+  loginAsAdmin: (passkey: string) => { success: boolean; error?: string };
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -42,7 +44,8 @@ const STORAGE_KEYS = {
   EVENTS: 'campuscollab_events_v2',
   REQUESTS: 'campuscollab_requests_v2',
   CURRENT_USER_ID: 'campuscollab_current_user_id_v2',
-  AUTH_TOKEN: 'campuscollab_auth_token_v2'
+  AUTH_TOKEN: 'campuscollab_auth_token_v2',
+  IS_ADMIN: 'campuscollab_is_admin_v1'
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -52,6 +55,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [requests, setRequests] = useState<CollaborationRequest[]>(initialRequests);
   const [currentUserId, setCurrentUserId] = useState<string>('student-1');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [isHydrated, setIsHydrated] = useState(false);
@@ -130,6 +134,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const savedRequests = localStorage.getItem(STORAGE_KEYS.REQUESTS);
       const savedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
       const savedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      const savedIsAdmin = localStorage.getItem(STORAGE_KEYS.IS_ADMIN);
 
       if (savedStudents) setStudents(JSON.parse(savedStudents));
       if (savedProjects) setProjects(JSON.parse(savedProjects));
@@ -137,6 +142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (savedRequests) setRequests(JSON.parse(savedRequests));
       if (savedUserId) setCurrentUserId(savedUserId);
       setIsAuthenticated(Boolean(savedToken || savedUserId));
+      setIsAdmin(savedIsAdmin === 'true');
     } catch (e) {
       console.warn('LocalStorage hydration error:', e);
     }
@@ -201,12 +207,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       setCurrentUserId(loggedUser.id);
       setIsAuthenticated(true);
+
+      const isAdminEmail = (loggedUser.email || '').toLowerCase() === 'mrvaibhavshivam1930@gmail.com';
+      if (isAdminEmail) {
+        setIsAdmin(true);
+        try {
+          localStorage.setItem(STORAGE_KEYS.IS_ADMIN, 'true');
+        } catch (e) {}
+      } else {
+        setIsAdmin(false);
+        try {
+          localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
+        } catch (e) {}
+      }
+
       try {
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, loggedUser.id);
         localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token || 'demo-token');
       } catch (e) {}
 
-      showToast(`Welcome back, ${loggedUser.name}! 🎉`, 'success', 'You are now signed in.');
+      showToast(`Welcome back, ${loggedUser.name}! 🎉`, 'success', isAdminEmail ? 'Logged in with Admin privileges.' : 'You are now signed in.');
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message || 'Network error during login.' };
@@ -239,7 +259,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       setCurrentUserId(newUser.id);
       setIsAuthenticated(true);
+      setIsAdmin(false);
       try {
+        localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, newUser.id);
         localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token || 'demo-token');
       } catch (e) {}
@@ -251,19 +273,64 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginAsAdmin = (passkey: string): { success: boolean; error?: string } => {
+    const trimmed = passkey.trim();
+    const validKeys = [
+      process.env.NEXT_PUBLIC_ADMIN_PASSKEY,
+      'admin2026',
+      'vaibhav2026',
+      'campuscollab@2026'
+    ].filter(Boolean);
+
+    if (validKeys.includes(trimmed)) {
+      setIsAdmin(true);
+      setIsAuthenticated(true);
+      try {
+        localStorage.setItem(STORAGE_KEYS.IS_ADMIN, 'true');
+        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, 'admin-token');
+      } catch (e) {}
+
+      const adminStudent = students.find(
+        (s) => s.id === 'student-live-test' || s.name.toLowerCase().includes('vaibhav')
+      );
+      if (adminStudent) {
+        setCurrentUserId(adminStudent.id);
+        try {
+          localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, adminStudent.id);
+        } catch (e) {}
+      }
+
+      showToast('Admin Access Granted 👑', 'success', 'Demo Persona Switcher is unlocked for you.');
+      return { success: true };
+    } else {
+      return { success: false, error: 'Invalid Administrator Passkey.' };
+    }
+  };
+
   const logout = () => {
     setIsAuthenticated(false);
-    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    setIsAdmin(false);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+      localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
+    } catch (e) {}
     showToast('Logged out safely', 'info', 'See you next time!');
   };
 
   const switchUser = (studentId: string) => {
+    if (!isAdmin) {
+      showToast('Admin Only Feature 🔒', 'error', 'Demo Persona Switcher is restricted to Administrator.');
+      return;
+    }
     const target = students.find((s) => s.id === studentId);
     if (target) {
       setCurrentUserId(studentId);
       setIsAuthenticated(true);
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, studentId);
-      showToast(`Switched profile to ${target.name}`, 'info', target.primaryRole);
+      try {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, studentId);
+      } catch (e) {}
+      showToast(`Switched persona to ${target.name}`, 'info', target.primaryRole);
     }
   };
 
@@ -553,7 +620,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         runSmartMatch,
         showToast,
         refreshStudents,
-        isRefreshingStudents
+        isRefreshingStudents,
+        isAdmin,
+        loginAsAdmin
       }}
     >
       {children}
