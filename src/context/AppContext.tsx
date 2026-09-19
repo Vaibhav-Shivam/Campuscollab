@@ -22,6 +22,7 @@ interface AppContextType {
   logout: () => void;
   switchUser: (studentId: string) => void;
   updateUserStatus: (status: AvailabilityStatus, lookingForRole?: string) => void;
+  updateUserProfile: (updatedFields: Partial<Student>) => Promise<boolean>;
   createProject: (newProject: Omit<Project, 'id' | 'createdAt' | 'ownerId' | 'ownerName' | 'ownerAvatar' | 'ownerCollege' | 'comments' | 'likesCount'>) => Project;
   addCommentToProject: (projectId: string, content: string, offeringSkills?: string[]) => void;
   sendCollaborationRequest: (receiverId: string, projectId: string, message: string) => CollaborationRequest;
@@ -220,6 +221,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       'success',
       lookingForRole ? `Target: ${lookingForRole}` : undefined
     );
+  };
+
+  const updateUserProfile = async (updatedFields: Partial<Student>): Promise<boolean> => {
+    try {
+      const mergedStudent: Student = {
+        ...currentUser,
+        ...updatedFields,
+        id: currentUser.id
+      };
+
+      // 1. Update state immediately for instant UI responsiveness
+      setStudents((prev) =>
+        prev.map((s) => (s.id === currentUser.id ? mergedStudent : s))
+      );
+
+      showToast('Profile & Proofs Updated! ✨', 'success', 'Your portfolio links and proofs are now public.');
+
+      // 2. Persist to cloud backend / DynamoDB
+      const res = await fetch('/api/students', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: currentUser.id,
+          ...updatedFields
+        })
+      });
+
+      if (!res.ok) {
+        console.warn('Student profile update: server status', res.status);
+      }
+      return true;
+    } catch (err: any) {
+      console.error('Failed to sync profile update to server:', err);
+      showToast('Saved Locally', 'info', 'Saved in browser storage (offline mode).');
+      return true;
+    }
   };
 
   const createProject = (
@@ -448,6 +485,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         logout,
         switchUser,
         updateUserStatus,
+        updateUserProfile,
         createProject,
         addCommentToProject,
         sendCollaborationRequest,

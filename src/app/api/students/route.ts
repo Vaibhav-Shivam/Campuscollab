@@ -95,3 +95,41 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, ...updates } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'Student ID is required to update profile' },
+        { status: 400 }
+      );
+    }
+
+    const { students } = await fetchStudentsFromDB();
+    const existing = students.find((s) => s.id === id);
+
+    const updatedStudent: Student = {
+      ...(existing || {}),
+      ...updates,
+      id
+    } as Student;
+
+    const saved = await saveStudentToDB(updatedStudent);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Student profile updated successfully',
+      persistedToDynamoDB: saved,
+      student: updatedStudent
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: 'Failed to update student profile' },
+      { status: 500 }
+    );
+  }
+}
+

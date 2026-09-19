@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useApp } from '@/context/AppContext';
 import StatusBadge from '@/components/StatusBadge';
 import CreateProjectModal from '@/components/CreateProjectModal';
+import EditProfileModal from '@/components/EditProfileModal';
 import {
   Users,
   FolderKanban,
@@ -12,12 +13,46 @@ import {
   Sparkles,
   Calendar,
   CheckCircle,
+  CheckCircle2,
   PlusCircle,
   Mail,
   ArrowUpRight,
-  ShieldCheck
+  ShieldCheck,
+  Edit3,
+  ExternalLink,
+  Code2,
+  Plus,
+  Link as LinkIcon
 } from 'lucide-react';
 import { AvailabilityStatus } from '@/types';
+
+function GithubIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+      <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+    </svg>
+  );
+}
+
+function FigmaIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 38 57" fill="currentColor">
+      <path fill="#EA580C" d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z"/>
+      <path fill="#000000" d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z"/>
+      <path fill="#2E7058" d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z"/>
+      <path fill="#8B6F47" d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z"/>
+      <path fill="#A3C9AB" d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z"/>
+    </svg>
+  );
+}
+
+function LinkedinIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+    </svg>
+  );
+}
 
 export default function StudentDashboardPage() {
   const {
@@ -30,6 +65,7 @@ export default function StudentDashboardPage() {
   } = useApp();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [lookingGoal, setLookingGoal] = useState(currentUser.lookingForRole || '');
   const [statusUpdatedToast, setStatusUpdatedToast] = useState(false);
 
@@ -77,6 +113,13 @@ export default function StudentDashboardPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-[#4FD1C5] hover:bg-[#38b2ac] text-black font-black text-xs uppercase px-4 py-2.5 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-black" />
+                <span>Edit Profile & Links</span>
+              </button>
               <Link
                 href={`/students/${currentUser.id}`}
                 className="flex-1 sm:flex-none text-center text-xs font-black uppercase px-4 py-2.5 rounded-xl border-2 border-black bg-white hover:bg-stone-100 text-black shadow-[2.5px_2.5px_0px_0px_#000] transition-colors"
@@ -192,6 +235,231 @@ export default function StudentDashboardPage() {
               Save Goal
             </button>
           </form>
+        </div>
+
+        {/* Section: Portfolio & External Links Hub */}
+        <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 sm:p-8 shadow-[5px_5px_0px_0px_#000] space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase bg-[#4FD1C5] px-2.5 py-0.5 rounded-md border border-black shadow-[1.5px_1.5px_0px_0px_#000] mb-1.5">
+                ★ Proof of Work Hub
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-tight text-black">
+                Your Portfolio, GitHub & Work Proofs
+              </h3>
+              <p className="text-xs font-semibold text-stone-600">
+                Connect your GitHub profile, personal portfolio website, LinkedIn, and Figma to build instant credibility.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="inline-flex items-center gap-2 bg-[#FFDE59] hover:bg-[#ffe373] text-black font-black text-xs uppercase px-4 py-2.5 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer self-start sm:self-auto"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Update Links & Proofs</span>
+            </button>
+          </div>
+
+          {/* Grid of 4 Link Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {/* GitHub */}
+            <div className={`p-4 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] flex flex-col justify-between ${
+              currentUser.githubUrl ? 'bg-[#FAF8F5]' : 'bg-stone-50 border-dashed'
+            }`}>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <GithubIcon className="w-4 h-4 text-black" />
+                    <span className="font-black text-xs uppercase text-black">GitHub</span>
+                  </div>
+                  {currentUser.githubUrl ? (
+                    <span className="text-[10px] font-black uppercase text-black bg-[#38E54D] px-2 py-0.5 rounded border border-black">
+                      Connected
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold uppercase text-stone-500">Not set</span>
+                  )}
+                </div>
+                <p className="text-[11px] text-stone-600 truncate font-semibold">
+                  {currentUser.githubUrl || 'Add your GitHub profile'}
+                </p>
+              </div>
+              <div className="pt-3 mt-2 border-t border-black/20">
+                {currentUser.githubUrl ? (
+                  <a
+                    href={currentUser.githubUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-black hover:underline uppercase"
+                  >
+                    <span>View Profile</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ) : (
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-black hover:underline uppercase cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add GitHub Link</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Portfolio */}
+            <div className={`p-4 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] flex flex-col justify-between ${
+              currentUser.portfolioUrl ? 'bg-[#FAF8F5]' : 'bg-stone-50 border-dashed'
+            }`}>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Code2 className="w-4 h-4 text-black" />
+                    <span className="font-black text-xs uppercase text-black">Portfolio</span>
+                  </div>
+                  {currentUser.portfolioUrl ? (
+                    <span className="text-[10px] font-black uppercase text-black bg-[#38E54D] px-2 py-0.5 rounded border border-black">
+                      Connected
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold uppercase text-stone-500">Not set</span>
+                  )}
+                </div>
+                <p className="text-[11px] text-stone-600 truncate font-semibold">
+                  {currentUser.portfolioUrl || 'Add personal website'}
+                </p>
+              </div>
+              <div className="pt-3 mt-2 border-t border-black/20">
+                {currentUser.portfolioUrl ? (
+                  <a
+                    href={currentUser.portfolioUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-black hover:underline uppercase"
+                  >
+                    <span>Visit Site</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ) : (
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-black hover:underline uppercase cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Portfolio</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* LinkedIn */}
+            <div className={`p-4 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] flex flex-col justify-between ${
+              currentUser.linkedinUrl ? 'bg-[#FAF8F5]' : 'bg-stone-50 border-dashed'
+            }`}>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <LinkedinIcon className="w-4 h-4 text-[#0077B5]" />
+                    <span className="font-black text-xs uppercase text-black">LinkedIn</span>
+                  </div>
+                  {currentUser.linkedinUrl ? (
+                    <span className="text-[10px] font-black uppercase text-black bg-[#38E54D] px-2 py-0.5 rounded border border-black">
+                      Connected
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold uppercase text-stone-500">Not set</span>
+                  )}
+                </div>
+                <p className="text-[11px] text-stone-600 truncate font-semibold">
+                  {currentUser.linkedinUrl || 'Add LinkedIn profile'}
+                </p>
+              </div>
+              <div className="pt-3 mt-2 border-t border-black/20">
+                {currentUser.linkedinUrl ? (
+                  <a
+                    href={currentUser.linkedinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-black hover:underline uppercase"
+                  >
+                    <span>Open LinkedIn</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ) : (
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-black hover:underline uppercase cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add LinkedIn</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Figma */}
+            <div className={`p-4 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] flex flex-col justify-between ${
+              currentUser.figmaUrl ? 'bg-[#FAF8F5]' : 'bg-stone-50 border-dashed'
+            }`}>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FigmaIcon className="w-4 h-4 text-black" />
+                    <span className="font-black text-xs uppercase text-black">Figma</span>
+                  </div>
+                  {currentUser.figmaUrl ? (
+                    <span className="text-[10px] font-black uppercase text-black bg-[#38E54D] px-2 py-0.5 rounded border border-black">
+                      Connected
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold uppercase text-stone-500">Not set</span>
+                  )}
+                </div>
+                <p className="text-[11px] text-stone-600 truncate font-semibold">
+                  {currentUser.figmaUrl || 'Add Figma design link'}
+                </p>
+              </div>
+              <div className="pt-3 mt-2 border-t border-black/20">
+                {currentUser.figmaUrl ? (
+                  <a
+                    href={currentUser.figmaUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-black hover:underline uppercase"
+                  >
+                    <span>View Canvas</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ) : (
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-black hover:underline uppercase cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Figma Link</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Project Proofs Summary */}
+          <div className="pt-3 border-t-2 border-black flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 font-bold text-stone-700">
+              <span className="font-black text-black uppercase">
+                ★ {currentUser.proofs?.length || 0} Verified Proofs Attached
+              </span>
+              <span>— GitHub repos, deployed demo apps & design files</span>
+            </div>
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="inline-flex items-center gap-1.5 bg-[#4FD1C5] hover:bg-[#38b2ac] text-black font-black text-xs uppercase px-3.5 py-1.5 rounded-lg border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000] cursor-pointer self-start sm:self-auto"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add / Manage Proofs</span>
+            </button>
+          </div>
         </div>
 
         {/* Section: Collaboration Requests Hub (Received & Sent) */}
@@ -416,6 +684,14 @@ export default function StudentDashboardPage() {
 
       {showCreateModal && (
         <CreateProjectModal onClose={() => setShowCreateModal(false)} />
+      )}
+
+      {showEditModal && (
+        <EditProfileModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          student={currentUser}
+        />
       )}
     </div>
   );

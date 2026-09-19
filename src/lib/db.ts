@@ -68,7 +68,11 @@ export async function fetchStudentsFromDB(): Promise<{ students: Student[]; sour
       hackathonCount: it.hackathonCount || 0,
       email: it.email || 'student@campuscollab.edu',
       interests: it.interests || ['Hackathons', 'Tech'],
-      proofs: it.proofs || []
+      proofs: it.proofs || [],
+      githubUrl: it.githubUrl,
+      portfolioUrl: it.portfolioUrl,
+      linkedinUrl: it.linkedinUrl,
+      figmaUrl: it.figmaUrl
     }));
 
     return { students, source: 'dynamodb' };
@@ -83,14 +87,20 @@ export async function saveStudentToDB(student: Student): Promise<boolean> {
   if (!client) return false;
 
   try {
+    const cleanedItem: Record<string, any> = {
+      pk: `STUDENT#${student.id}`,
+      sk: 'METADATA',
+      updatedAt: new Date().toISOString()
+    };
+    for (const [k, v] of Object.entries(student)) {
+      if (v !== undefined) {
+        cleanedItem[k] = v;
+      }
+    }
+
     const command = new PutCommand({
       TableName: TABLE_NAME,
-      Item: {
-        pk: `STUDENT#${student.id}`,
-        sk: 'METADATA',
-        ...student,
-        updatedAt: new Date().toISOString()
-      }
+      Item: cleanedItem
     });
     await client.send(command);
     return true;
