@@ -1,30 +1,87 @@
 import { NextResponse } from 'next/server';
-import { initialProjects } from '@/data/mockData';
+import { fetchProjectsFromDB, saveProjectToDB } from '@/lib/db';
+import { Project } from '@/types';
 
-export async function GET() {
-  return NextResponse.json({
-    success: true,
-    count: initialProjects.length,
-    projects: initialProjects
-  });
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type');
+    const search = searchParams.get('q')?.toLowerCase();
+
+    const { projects, source } = await fetchProjectsFromDB();
+    let results = [...projects];
+
+    if (search) {
+      results = results.filter((p) =>
+        p.title.toLowerCase().includes(search) ||
+        p.tagline.toLowerCase().includes(search) ||
+        p.description.toLowerCase().includes(search) ||
+        p.requiredSkills.some((s) => s.toLowerCase().includes(search))
+      );
+    }
+
+    if (type && type !== 'all') {
+      results = results.filter((p) => p.type.toLowerCase() === type.toLowerCase());
+    }
+
+    return NextResponse.json({
+      success: true,
+      count: results.length,
+      dataSource: source,
+      projects: results
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=59'
+      }
+    });
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch projects'
+    }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const newProject = {
-      ...body,
-      id: `project-${Date.now()}`,
+
+    if (!body.title || !body.description) {
+      return NextResponse.json({
+        success: false,
+        error: 'Title and description are required'
+      }, { status: 400 });
+    }
+
+    const newProject: Project = {
+      id: body.id || `project-${Date.now()}`,
+      title: body.title,
+      tagline: body.tagline || body.title,
+      description: body.description,
+      type: body.type || 'Hackathon',
+      ownerId: body.ownerId || 'student-1',
+      ownerName: body.ownerName || 'Project Lead',
+      ownerAvatar: body.ownerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+      ownerCollege: body.ownerCollege || 'College Campus',
       createdAt: 'Just now',
+      requiredSkills: Array.isArray(body.requiredSkills) ? body.requiredSkills : [],
+      currentMembers: body.currentMembers || 1,
+      maxMembers: body.maxMembers || 4,
+      isOpen: body.isOpen !== undefined ? body.isOpen : true,
       likesCount: 0,
-      comments: []
+      comments: [],
+      tags: Array.isArray(body.tags) ? body.tags : []
     };
+
+    const saved = await saveProjectToDB(newProject);
 
     return NextResponse.json({
       success: true,
-      message: 'Project post created successfully in DynamoDB table',
+      persistedToDynamoDB: saved,
       project: newProject
-    });
+    }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: 'Invalid payload' },

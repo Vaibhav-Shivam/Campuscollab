@@ -1,8 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Student, Project, CampusEvent, CollaborationRequest, AIMatchResult, AvailabilityStatus } from '@/types';
 import { initialStudents, initialProjects, initialCampusEvents, initialRequests } from '@/data/mockData';
+import { ToastContainer, ToastMessage } from '@/components/Toast';
 
 interface AppContextType {
   currentUser: Student;
@@ -18,16 +19,17 @@ interface AppContextType {
   respondToRequest: (requestId: string, status: 'accepted' | 'declined') => void;
   toggleEventRegistration: (eventId: string) => void;
   runSmartMatch: (query: string) => { neededSkills: string[]; availableSkills: string[]; matches: AIMatchResult[] };
+  showToast: (title: string, type?: 'success' | 'error' | 'info', description?: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  STUDENTS: 'campuscollab_students_v1',
-  PROJECTS: 'campuscollab_projects_v1',
-  EVENTS: 'campuscollab_events_v1',
-  REQUESTS: 'campuscollab_requests_v1',
-  CURRENT_USER_ID: 'campuscollab_current_user_id_v1'
+  STUDENTS: 'campuscollab_students_v2',
+  PROJECTS: 'campuscollab_projects_v2',
+  EVENTS: 'campuscollab_events_v2',
+  REQUESTS: 'campuscollab_requests_v2',
+  CURRENT_USER_ID: 'campuscollab_current_user_id_v2'
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -37,8 +39,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [requests, setRequests] = useState<CollaborationRequest[]>(initialRequests);
   const [currentUserId, setCurrentUserId] = useState<string>('student-1');
   const [isHydrated, setIsHydrated] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Hydrate from localStorage on mount
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const showToast = useCallback((title: string, type: 'success' | 'error' | 'info' = 'success', description?: string) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    setToasts((prev) => [...prev.slice(-3), { id, title, description, type }]);
+    setTimeout(() => {
+      dismissToast(id);
+    }, 4500);
+  }, [dismissToast]);
+
+  // Hydrate from localStorage on mount & sync with API
   useEffect(() => {
     try {
       const savedStudents = localStorage.getItem(STORAGE_KEYS.STUDENTS);
@@ -56,6 +71,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       console.warn('LocalStorage hydration error:', e);
     }
     setIsHydrated(true);
+
+    // Background fetch from cloud API
+    fetch('/api/projects')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.projects) && data.projects.length > 0) {
+          setProjects((prev) => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const fresh = data.projects.filter((p: Project) => !existingIds.has(p.id));
+            return [...fresh, ...prev];
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Save to localStorage on state changes once hydrated
@@ -78,6 +107,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const target = students.find((s) => s.id === studentId);
     if (target) {
       setCurrentUserId(studentId);
+      showToast(`Switched profile to ${target.name}`, 'info', target.primaryRole);
     }
   };
 
@@ -88,6 +118,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ? { ...s, status, lookingForRole: lookingForRole ?? s.lookingForRole }
           : s
       )
+    );
+    showToast(
+      status === 'available' ? 'You are now Open for Collabs!' : 'Status set to Looking for Teammates',
+      'success',
+      lookingForRole ? `Target: ${lookingForRole}` : undefined
     );
   };
 
@@ -108,7 +143,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       likesCount: 1,
       comments: []
     };
+
     setProjects((prev) => [created, ...prev]);
+    showToast('Project Published! 🚀', 'success', `"${created.title}" is now live for applications.`);
+
+    // Persist to API / DynamoDB
+    fetch('/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(created)
+    }).catch((err) => console.warn('Cloud persistence queued:', err));
+
     return created;
   };
 
@@ -129,6 +174,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         p.id === projectId ? { ...p, comments: [...p.comments, newComment] } : p
       )
     );
+    showToast('Comment posted! 💬', 'success');
   };
 
   const sendCollaborationRequest = (
@@ -156,6 +202,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setRequests((prev) => [newReq, ...prev]);
+    showToast('Application Sent! 📬', 'success', `Request delivered to ${targetStudent?.name || 'project owner'}`);
     return newReq;
   };
 
@@ -163,13 +210,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRequests((prev) =>
       prev.map((r) => (r.id === requestId ? { ...r, status } : r))
     );
+    showToast(
+      status === 'accepted' ? 'Collaboration Accepted! 🎉' : 'Request declined',
+      status === 'accepted' ? 'success' : 'info'
+    );
   };
 
   const toggleEventRegistration = (eventId: string) => {
+    let nowRegistered = false;
+    let eventTitle = 'Campus Event';
+
     setEvents((prev) =>
       prev.map((e) => {
         if (e.id === eventId) {
           const isReg = !e.isRegistered;
+          nowRegistered = isReg;
+          eventTitle = e.title;
           return {
             ...e,
             isRegistered: isReg,
@@ -178,6 +234,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
         return e;
       })
+    );
+
+    showToast(
+      nowRegistered ? 'RSVP Confirmed! 🎟️' : 'RSVP Cancelled',
+      nowRegistered ? 'success' : 'info',
+      eventTitle
     );
   };
 
@@ -189,34 +251,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const knownSkills = [
       'python', 'react', 'ui/ux', 'figma', 'machine learning', 'fastapi',
       'next.js', 'typescript', 'tailwind css', 'node.js', 'aws', 'video editing',
-      'premiere pro', 'motion design', 'html/css', 'docker', 'pytorch'
+      'premiere pro', 'motion design', 'html/css', 'docker', 'pytorch', 'postgresql',
+      'solidity', 'web3', 'flutter', 'react native', 'cybersecurity'
     ];
 
     const extractedNeeded: string[] = [];
     const extractedAvailable: string[] = [];
 
-    // Analyze natural language signals (e.g., "I know Python", "need React and UI/UX")
+    // Analyze natural language signals
     knownSkills.forEach((skill) => {
       if (lowerQuery.includes(skill)) {
-        // If preceded by "i know", "have", "with", assume available; if preceded by "need", "looking for", "want", assume needed
-        const haveRegex = new RegExp(`(i know|have|knows|with|proficient in)\\s+[^.]*?${skill}`, 'i');
-        const needRegex = new RegExp(`(need|looking for|want|searching for|require)\\s+[^.]*?${skill}`, 'i');
-
-        if (needRegex.test(lowerQuery)) {
+        if (
+          lowerQuery.includes(`need ${skill}`) ||
+          lowerQuery.includes(`looking for ${skill}`) ||
+          lowerQuery.includes(`want ${skill}`) ||
+          lowerQuery.includes(`require ${skill}`) ||
+          lowerQuery.includes(`search ${skill}`)
+        ) {
           extractedNeeded.push(skill);
-        } else if (haveRegex.test(lowerQuery)) {
+        } else if (
+          lowerQuery.includes(`i know ${skill}`) ||
+          lowerQuery.includes(`i have ${skill}`) ||
+          lowerQuery.includes(`my skill is ${skill}`) ||
+          lowerQuery.includes(`skilled in ${skill}`)
+        ) {
           extractedAvailable.push(skill);
         } else {
-          // Default to needed if looking for collaborators
           extractedNeeded.push(skill);
         }
       }
     });
 
-    // Fallbacks if no specific trigger pattern matched
-    const targetSkills = extractedNeeded.length > 0 ? extractedNeeded : ['react', 'ui/ux', 'figma'];
+    const targetSkills = extractedNeeded.length > 0 ? extractedNeeded : (knownSkills.filter(s => lowerQuery.includes(s)));
 
-    // Rank students (excluding current user)
+    // Score all candidates against target skills
     const matches: AIMatchResult[] = students
       .filter((s) => s.id !== currentUser.id)
       .map((student) => {
@@ -226,29 +294,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         );
         const missing = targetSkills.filter((req) => !matched.includes(req));
 
-        // Score formula: base match ratio + availability bonus + project proof bonus
-        const skillRatio = targetSkills.length > 0 ? (matched.length / targetSkills.length) * 60 : 30;
-        const availBonus = student.status === 'available' ? 25 : 10;
-        const proofBonus = Math.min(student.proofs.length * 5, 15);
-        const totalScore = Math.min(98, Math.round(skillRatio + availBonus + proofBonus));
-
+        let score = 0;
         const reasons: string[] = [];
-        if (matched.length > 0) {
-          reasons.push(`Mastery in ${matched.map((m) => m.toUpperCase()).join(' & ')}`);
+
+        if (targetSkills.length > 0) {
+          const matchRatio = matched.length / targetSkills.length;
+          score += matchRatio * 60;
+          if (matched.length > 0) {
+            reasons.push(`Verified skills: ${matched.join(', ')}`);
+          }
+        } else {
+          score += 40;
         }
-        if (student.proofs.length > 0) {
-          reasons.push(`${student.proofs.length} verified project proofs in portfolio`);
+
+        if (student.status === 'looking') {
+          score += 25;
+          reasons.push('Actively seeking a project team right now');
+        } else if (student.status === 'available') {
+          score += 15;
+          reasons.push('Available for new collaboration');
         }
-        if (student.status === 'available') {
-          reasons.push('Currently actively looking to join a project');
+
+        if (student.proofs && student.proofs.length > 0) {
+          score += 15;
+          reasons.push(`${student.proofs.length} verified portfolio project proof(s) attached`);
         }
-        if (student.hackathonCount > 1) {
-          reasons.push(`Proven hackathon collaborator (${student.hackathonCount} attended)`);
-        }
+
+        const normalizedScore = Math.min(99, Math.max(35, Math.round(score)));
 
         return {
           student,
-          matchScore: totalScore,
+          matchScore: normalizedScore,
           matchedSkills: matched,
           missingSkills: missing,
           reasons
@@ -278,10 +354,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         sendCollaborationRequest,
         respondToRequest,
         toggleEventRegistration,
-        runSmartMatch
+        runSmartMatch,
+        showToast
       }}
     >
       {children}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </AppContext.Provider>
   );
 }
