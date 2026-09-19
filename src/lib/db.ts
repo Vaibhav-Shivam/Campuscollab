@@ -9,45 +9,109 @@ import { inferSkillCategory } from '@/lib/categorize';
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'workshop-campuscollab-db';
 const REGION = process.env.AWS_DEFAULT_REGION || process.env.AWS_REGION || 'us-east-1';
 
-// Server-side persistent file storage for 100% reliable cross-device sync on Render & Local
-const DATA_DIR = path.join(process.cwd(), 'data');
-const STUDENTS_FILE = path.join(DATA_DIR, 'registered_students.json');
-const AUTH_FILE = path.join(DATA_DIR, 'user_auth.json');
+// Server-side multi-tier persistent storage: Primary cwd/data, Backup /tmp, and Global in-memory
+const PRIMARY_DATA_DIR = path.join(process.cwd(), 'data');
+const BACKUP_DATA_DIR = '/tmp/campuscollab_data';
 
-function ensureDataDir(): void {
+const PRIMARY_STUDENTS_FILE = path.join(PRIMARY_DATA_DIR, 'registered_students.json');
+const BACKUP_STUDENTS_FILE = path.join(BACKUP_DATA_DIR, 'registered_students.json');
+
+const PRIMARY_AUTH_FILE = path.join(PRIMARY_DATA_DIR, 'user_auth.json');
+const BACKUP_AUTH_FILE = path.join(BACKUP_DATA_DIR, 'user_auth.json');
+
+export interface LocalAuthRecord {
+  email: string;
+  passwordHash: string;
+  studentId: string;
+  name?: string;
+  college?: string;
+  student?: Student;
+  createdAt: string;
+}
+
+// Global in-memory cache to preserve state across requests within server runtime
+const globalStore = global as unknown as {
+  __cc_students?: Map<string, Student>;
+  __cc_auth?: Map<string, LocalAuthRecord>;
+};
+if (!globalStore.__cc_students) globalStore.__cc_students = new Map();
+if (!globalStore.__cc_auth) globalStore.__cc_auth = new Map();
+
+function safeReadFile(filePath: string): string | null {
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (fs.existsSync(/*turbopackIgnore: true*/ filePath)) {
+      return fs.readFileSync(/*turbopackIgnore: true*/ filePath, 'utf-8');
     }
-    if (!fs.existsSync(STUDENTS_FILE)) {
-      fs.writeFileSync(STUDENTS_FILE, JSON.stringify([]), 'utf-8');
+  } catch (e) {}
+  return null;
+}
+
+function safeWriteFile(filePath: string, content: string): boolean {
+  try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(/*turbopackIgnore: true*/ dir)) {
+      fs.mkdirSync(/*turbopackIgnore: true*/ dir, { recursive: true });
     }
-    if (!fs.existsSync(AUTH_FILE)) {
-      fs.writeFileSync(AUTH_FILE, JSON.stringify([]), 'utf-8');
-    }
-  } catch (err) {
-    console.warn('[DB] Could not initialize local data directory:', err);
+    fs.writeFileSync(/*turbopackIgnore: true*/ filePath, content, 'utf-8');
+    return true;
+  } catch (e) {
+    return false;
   }
 }
 
 function getLocalRegisteredStudents(): Student[] {
-  try {
-    ensureDataDir();
-    if (!fs.existsSync(STUDENTS_FILE)) return [];
-    const raw = fs.readFileSync(STUDENTS_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    return [];
+  const map = new Map<string, Student>();
+
+  // 1. In-memory cache
+  if (globalStore.__cc_students) {
+    for (const s of globalStore.__cc_students.values()) {
+      map.set(s.id, s);
+    }
   }
+
+  // 2. Multi-tier file stores (Primary and Backup)
+  const files = [PRIMARY_STUDENTS_FILE, BACKUP_STUDENTS_FILE];
+  for (const f of files) {
+    const raw = safeReadFile(f);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const s of parsed) {
+            if (s && s.id) {
+              map.set(s.id, s);
+              if (globalStore.__cc_students) {
+                globalStore.__cc_students.set(s.id, s);
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 function saveLocalRegisteredStudent(student: Student): boolean {
   try {
-    ensureDataDir();
+    // 1. Update in-memory
+    if (globalStore.__cc_students) {
+      globalStore.__cc_students.set(student.id, student);
+    }
+
+    // 2. Merge with existing
     const current = getLocalRegisteredStudents();
-    const updated = [student, ...current.filter((s) => s.id !== student.id)];
-    fs.writeFileSync(STUDENTS_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+    const studentEmail = (student.email || '').toLowerCase();
+    const updated = [
+      student,
+      ...current.filter((s) => s.id !== student.id && (!studentEmail || (s.email || '').toLowerCase() !== studentEmail))
+    ];
+
+    // 3. Write to all available file tiers
+    const jsonStr = JSON.stringify(updated, null, 2);
+    safeWriteFile(PRIMARY_STUDENTS_FILE, jsonStr);
+    safeWriteFile(BACKUP_STUDENTS_FILE, jsonStr);
     return true;
   } catch (err) {
     console.warn('[DB] Failed to save student to local persistent store:', err);
@@ -55,31 +119,57 @@ function saveLocalRegisteredStudent(student: Student): boolean {
   }
 }
 
-interface LocalAuthRecord {
-  email: string;
-  passwordHash: string;
-  studentId: string;
-  createdAt: string;
-}
-
 function getLocalUserAuth(): LocalAuthRecord[] {
-  try {
-    ensureDataDir();
-    if (!fs.existsSync(AUTH_FILE)) return [];
-    const raw = fs.readFileSync(AUTH_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    return [];
+  const map = new Map<string, LocalAuthRecord>();
+
+  // 1. In-memory cache
+  if (globalStore.__cc_auth) {
+    for (const a of globalStore.__cc_auth.values()) {
+      map.set(a.email.toLowerCase(), a);
+    }
   }
+
+  // 2. Primary and Backup files
+  const files = [PRIMARY_AUTH_FILE, BACKUP_AUTH_FILE];
+  for (const f of files) {
+    const raw = safeReadFile(f);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const a of parsed) {
+            if (a && a.email) {
+              const norm = a.email.toLowerCase();
+              map.set(norm, a);
+              if (globalStore.__cc_auth) {
+                globalStore.__cc_auth.set(norm, a);
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 function saveLocalUserAuthRecord(record: LocalAuthRecord): boolean {
   try {
-    ensureDataDir();
+    const norm = record.email.toLowerCase();
+    // 1. Update in-memory
+    if (globalStore.__cc_auth) {
+      globalStore.__cc_auth.set(norm, record);
+    }
+
+    // 2. Merge with existing
     const current = getLocalUserAuth();
-    const updated = [record, ...current.filter((r) => r.email.toLowerCase() !== record.email.toLowerCase())];
-    fs.writeFileSync(AUTH_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+    const updated = [record, ...current.filter((r) => r.email.toLowerCase() !== norm)];
+
+    // 3. Write to all available file tiers
+    const jsonStr = JSON.stringify(updated, null, 2);
+    safeWriteFile(PRIMARY_AUTH_FILE, jsonStr);
+    safeWriteFile(BACKUP_AUTH_FILE, jsonStr);
     return true;
   } catch (err) {
     console.warn('[DB] Failed to save auth record to local persistent store:', err);
@@ -374,24 +464,129 @@ export async function checkDBHealth(): Promise<{ status: 'HEALTHY' | 'DEGRADED';
   }
 }
 
-export async function findStudentByEmail(email: string): Promise<Student | null> {
-  const normalized = email.trim().toLowerCase();
-  // 1. Check local registered students
-  const local = getLocalRegisteredStudents();
-  const foundLocal = local.find((s) => s.email.toLowerCase() === normalized);
-  if (foundLocal) return foundLocal;
+export async function getStudentById(studentId: string): Promise<Student | null> {
+  // 1. In-memory
+  if (globalStore.__cc_students?.has(studentId)) {
+    return globalStore.__cc_students.get(studentId)!;
+  }
 
-  // 2. Check full student catalog
-  const { students } = await fetchStudentsFromDB();
-  return students.find((s) => s.email.toLowerCase() === normalized) || null;
+  // 2. Local registered students
+  const local = getLocalRegisteredStudents();
+  const found = local.find((s) => s.id === studentId);
+  if (found) return found;
+
+  // 3. Direct DynamoDB key lookup
+  const client = getDocClient();
+  if (client) {
+    try {
+      const command = new GetCommand({
+        TableName: TABLE_NAME,
+        Key: {
+          pk: `STUDENT#${studentId}`,
+          sk: 'METADATA'
+        }
+      });
+      const res = await client.send(command);
+      if (res.Item) {
+        const it = res.Item;
+        const student: Student = {
+          id: it.id || studentId,
+          name: it.name || 'Anonymous Student',
+          avatar: it.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(studentId)}`,
+          college: it.college || 'Engineering Institute',
+          year: it.year || '1st Year',
+          major: it.major || 'Computer Science',
+          primaryRole: it.primaryRole || 'Developer',
+          bio: it.bio || '',
+          status: it.status || 'available',
+          lookingForRole: it.lookingForRole,
+          skills: Array.isArray(it.skills) ? it.skills.map((s: string | { name: string; level: number; category: string }) => {
+            const skillName = typeof s === 'string' ? s.trim() : (s?.name || '').trim();
+            return {
+              name: skillName,
+              level: typeof s === 'object' && s?.level ? s.level : 4,
+              category: inferSkillCategory(skillName)
+            };
+          }) : [],
+          projectCount: it.projectCount || 0,
+          hackathonCount: it.hackathonCount || 0,
+          email: it.email || '',
+          interests: Array.isArray(it.interests) ? it.interests : ['Projects'],
+          proofs: Array.isArray(it.proofs) ? it.proofs : [],
+          githubUrl: it.githubUrl,
+          portfolioUrl: it.portfolioUrl,
+          linkedinUrl: it.linkedinUrl,
+          figmaUrl: it.figmaUrl
+        };
+        saveLocalRegisteredStudent(student);
+        return student;
+      }
+    } catch (e) {}
+  }
+
+  // 4. Initial template students
+  return initialStudents.find((s) => s.id === studentId) || null;
 }
 
-export async function saveUserAuth(email: string, passwordHash: string, studentId: string): Promise<boolean> {
+export async function findStudentByEmail(email: string): Promise<Student | null> {
+  const normalized = email.trim().toLowerCase();
+
+  // 1. Check in-memory
+  if (globalStore.__cc_students) {
+    for (const s of globalStore.__cc_students.values()) {
+      if ((s.email || '').toLowerCase() === normalized) return s;
+    }
+  }
+
+  // 2. Check local registered students
+  const local = getLocalRegisteredStudents();
+  const foundLocal = local.find((s) => (s.email || '').toLowerCase() === normalized);
+  if (foundLocal) {
+    if (globalStore.__cc_students) globalStore.__cc_students.set(foundLocal.id, foundLocal);
+    return foundLocal;
+  }
+
+  // 3. Check Auth record (if auth record exists, it points to student profile or studentId)
+  const auth = await getUserAuth(normalized);
+  if (auth) {
+    if (auth.student) {
+      saveLocalRegisteredStudent(auth.student);
+      return auth.student;
+    }
+    if (auth.studentId) {
+      const s = await getStudentById(auth.studentId);
+      if (s) {
+        saveLocalRegisteredStudent(s);
+        return s;
+      }
+    }
+  }
+
+  // 4. Check full student catalog
+  const { students } = await fetchStudentsFromDB();
+  const found = students.find((s) => (s.email || '').toLowerCase() === normalized);
+  if (found) {
+    saveLocalRegisteredStudent(found);
+    return found;
+  }
+
+  return null;
+}
+
+export async function saveUserAuth(
+  email: string,
+  passwordHash: string,
+  studentId: string,
+  studentProfile?: Student
+): Promise<boolean> {
   const normEmail = email.trim().toLowerCase();
   saveLocalUserAuthRecord({
     email: normEmail,
     passwordHash,
     studentId,
+    name: studentProfile?.name,
+    college: studentProfile?.college,
+    student: studentProfile,
     createdAt: new Date().toISOString()
   });
 
@@ -399,16 +594,23 @@ export async function saveUserAuth(email: string, passwordHash: string, studentI
   if (!client) return true;
 
   try {
+    const item: Record<string, any> = {
+      pk: `USER#${normEmail}`,
+      sk: 'AUTH',
+      email: normEmail,
+      passwordHash,
+      studentId,
+      createdAt: new Date().toISOString()
+    };
+    if (studentProfile) {
+      item.student = studentProfile;
+      item.name = studentProfile.name;
+      item.college = studentProfile.college;
+    }
+
     const command = new PutCommand({
       TableName: TABLE_NAME,
-      Item: {
-        pk: `USER#${normEmail}`,
-        sk: 'AUTH',
-        email: normEmail,
-        passwordHash,
-        studentId,
-        createdAt: new Date().toISOString()
-      }
+      Item: item
     });
     await client.send(command);
     return true;
@@ -418,20 +620,25 @@ export async function saveUserAuth(email: string, passwordHash: string, studentI
   }
 }
 
-export async function getUserAuth(email: string): Promise<{ email: string; passwordHash: string; studentId: string } | null> {
+export async function getUserAuth(email: string): Promise<LocalAuthRecord | null> {
   const normEmail = email.trim().toLowerCase();
-  // 1. Check server local store
+
+  // 1. Check in-memory
+  if (globalStore.__cc_auth?.has(normEmail)) {
+    return globalStore.__cc_auth.get(normEmail)!;
+  }
+
+  // 2. Check local stores
   const localAuths = getLocalUserAuth();
   const found = localAuths.find((a) => a.email.toLowerCase() === normEmail);
   if (found) {
-    return {
-      email: found.email,
-      passwordHash: found.passwordHash,
-      studentId: found.studentId
-    };
+    if (globalStore.__cc_auth) {
+      globalStore.__cc_auth.set(normEmail, found);
+    }
+    return found;
   }
 
-  // 2. Check DynamoDB
+  // 3. Check DynamoDB
   const client = getDocClient();
   if (!client) return null;
 
@@ -445,11 +652,18 @@ export async function getUserAuth(email: string): Promise<{ email: string; passw
     });
     const res = await client.send(command);
     if (!res.Item) return null;
-    return {
+
+    const record: LocalAuthRecord = {
       email: res.Item.email,
       passwordHash: res.Item.passwordHash,
-      studentId: res.Item.studentId
+      studentId: res.Item.studentId,
+      name: res.Item.name,
+      college: res.Item.college,
+      student: res.Item.student,
+      createdAt: res.Item.createdAt || new Date().toISOString()
     };
+    saveLocalUserAuthRecord(record);
+    return record;
   } catch (error) {
     console.warn('[DB] Error getting user auth record from DynamoDB:', error);
     return null;

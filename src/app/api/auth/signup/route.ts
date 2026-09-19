@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
     // Save student profile and auth record
     await saveStudentToDB(newStudent);
-    await saveUserAuth(newStudent.email, passwordHash, studentId);
+    await saveUserAuth(newStudent.email, passwordHash, studentId, newStudent);
 
     const token = Buffer.from(`${studentId}:${Date.now()}`).toString('base64');
 

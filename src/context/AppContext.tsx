@@ -45,7 +45,8 @@ const STORAGE_KEYS = {
   REQUESTS: 'campuscollab_requests_v2',
   CURRENT_USER_ID: 'campuscollab_current_user_id_v2',
   AUTH_TOKEN: 'campuscollab_auth_token_v2',
-  IS_ADMIN: 'campuscollab_is_admin_v1'
+  IS_ADMIN: 'campuscollab_is_admin_v1',
+  SAVED_CREDENTIALS: 'campuscollab_registered_credentials_v1'
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -87,6 +88,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
           // Preserve any newly created local student that hasn't synced yet
           const localOnly = prev.filter((s) => !serverStudentMap.has(s.id));
+
+          // Auto-sync local signups to server if server was restarted
+          if (localOnly.length > 0) {
+            localOnly.forEach((localStd) => {
+              if (localStd.id.startsWith('student-17') || !localStd.id.match(/^student-[1-6]$/)) {
+                fetch('/api/students', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(localStd)
+                }).catch(() => {});
+              }
+            });
+          }
 
           // Separate real signups from mock students
           const realStudents: Student[] = [];
@@ -183,12 +197,56 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const normalizedEmail = email.trim().toLowerCase();
+      let res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: normalizedEmail, password })
       });
-      const data = await res.json();
+      let data = await res.json();
+
+      // AUTO-HEALING RECOVERY:
+      // If server lost data (e.g. Render restart/ephemeral disk or cold start),
+      // check if this browser has the registered account and re-sync it to the server!
+      if (!res.ok && data.error && (data.error.includes('No account found with this email address') || res.status === 404)) {
+        try {
+          const credsRaw = localStorage.getItem(STORAGE_KEYS.SAVED_CREDENTIALS);
+          if (credsRaw) {
+            const list = JSON.parse(credsRaw);
+            const match = list.find((c: any) => c.email.toLowerCase() === normalizedEmail);
+            if (match && (match.formData || match.student)) {
+              // Automatically re-register / restore on server
+              const restorePayload = match.formData || {
+                name: match.student.name,
+                email: normalizedEmail,
+                password: match.password || password,
+                college: match.student.college,
+                major: match.student.major,
+                year: match.student.year,
+                primaryRole: match.student.primaryRole,
+                skills: match.student.skills,
+                bio: match.student.bio
+              };
+              const reReg = await fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(restorePayload)
+              });
+              if (reReg.ok) {
+                // Retry login
+                res = await fetch('/api/auth/login', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: normalizedEmail, password })
+                });
+                data = await res.json();
+              }
+            }
+          }
+        } catch (recoverErr) {
+          console.warn('Auto account recovery failed:', recoverErr);
+        }
+      }
 
       if (!res.ok || !data.success) {
         return { success: false, error: data.error || 'Authentication failed.' };
@@ -207,6 +265,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       setCurrentUserId(loggedUser.id);
       setIsAuthenticated(true);
+
+      // Cache credentials on successful login
+      try {
+        const existingRaw = localStorage.getItem(STORAGE_KEYS.SAVED_CREDENTIALS);
+        const list = existingRaw ? JSON.parse(existingRaw) : [];
+        const updated = [
+          {
+            email: normalizedEmail,
+            password,
+            student: loggedUser
+          },
+          ...list.filter((c: any) => c.email !== normalizedEmail)
+        ];
+        localStorage.setItem(STORAGE_KEYS.SAVED_CREDENTIALS, JSON.stringify(updated));
+      } catch (e) {}
 
       const isAdminEmail = (loggedUser.email || '').toLowerCase() === 'mrvaibhavshivam1930@gmail.com';
       if (isAdminEmail) {
@@ -256,6 +329,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
         return updated;
       });
+
+      // Save credentials in client local storage cache for auto-recovery
+      try {
+        const existingRaw = localStorage.getItem(STORAGE_KEYS.SAVED_CREDENTIALS);
+        const list = existingRaw ? JSON.parse(existingRaw) : [];
+        const norm = (newUser.email || formData.email).toLowerCase();
+        const updated = [
+          {
+            email: norm,
+            password: formData.password,
+            student: newUser,
+            formData
+          },
+          ...list.filter((c: any) => c.email !== norm)
+        ];
+        localStorage.setItem(STORAGE_KEYS.SAVED_CREDENTIALS, JSON.stringify(updated));
+      } catch (e) {}
 
       setCurrentUserId(newUser.id);
       setIsAuthenticated(true);

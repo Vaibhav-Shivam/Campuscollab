@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { findStudentByEmail, getUserAuth, fetchStudentsFromDB } from '@/lib/db';
+import { findStudentByEmail, getUserAuth, getStudentById, saveStudentToDB } from '@/lib/db';
+import { Student } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,28 +22,71 @@ export async function POST(request: Request) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const student = await findStudentByEmail(normalizedEmail);
 
-    if (!student) {
+    // 1. Dual-check: Look up student profile AND auth record
+    let student = await findStudentByEmail(normalizedEmail);
+    const authRecord = await getUserAuth(normalizedEmail);
+
+    if (!student && !authRecord) {
       return NextResponse.json(
         { success: false, error: 'No account found with this email address.' },
         { status: 404 }
       );
     }
 
-    // Check auth record
-    const authRecord = await getUserAuth(normalizedEmail);
+    // 2. Verify password
     const inputHash = hashPassword(password);
+    let isMatch = false;
 
-    // If auth record exists, compare hash; if demo account without password, allow demo password or password123
-    const isMatch = authRecord
-      ? authRecord.passwordHash === inputHash
-      : password === 'password123' || password.length >= 6;
+    if (authRecord && authRecord.passwordHash) {
+      isMatch = authRecord.passwordHash === inputHash;
+    } else if (student) {
+      // If legacy or template account without password hash
+      isMatch = password === 'password123' || password.length >= 6;
+    }
 
     if (!isMatch) {
       return NextResponse.json(
         { success: false, error: 'Incorrect password. Please try again.' },
         { status: 401 }
+      );
+    }
+
+    // 3. If student profile is missing from disk/scan but auth record exists, restore it!
+    if (!student && authRecord) {
+      if (authRecord.student) {
+        student = authRecord.student;
+      } else if (authRecord.studentId) {
+        student = await getStudentById(authRecord.studentId);
+      }
+
+      if (!student) {
+        student = {
+          id: authRecord.studentId || `student-${Date.now()}`,
+          name: authRecord.name || normalizedEmail.split('@')[0],
+          email: normalizedEmail,
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(normalizedEmail)}`,
+          college: authRecord.college || 'Engineering College',
+          year: '1st Year',
+          major: 'Computer Science',
+          primaryRole: 'Developer',
+          bio: 'Campus collaborator ready to build.',
+          status: 'available',
+          skills: [{ name: 'Development', level: 4, category: 'Development' }],
+          projectCount: 0,
+          hackathonCount: 0,
+          interests: ['Projects', 'Hackathons'],
+          proofs: []
+        };
+      }
+      // Re-save to ensure it's restored across all storage tiers
+      await saveStudentToDB(student);
+    }
+
+    if (!student) {
+      return NextResponse.json(
+        { success: false, error: 'Could not load student profile. Please try logging in again.' },
+        { status: 500 }
       );
     }
 

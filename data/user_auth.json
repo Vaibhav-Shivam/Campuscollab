@@ -1,1 +1,51 @@
-[]
+[
+  {
+    "email": "mrvaibhavshivam1930@gmail.com",
+    "passwordHash": "7bc386ced98cdeed30ebdf9f10abea758203411776e27b0343dc4dfdbb6e0051",
+    "studentId": "student-1789820112921",
+    "name": "Vaibhav Shivam",
+    "college": "National Institute of Technology",
+    "student": {
+      "id": "student-1789820112921",
+      "name": "Vaibhav Shivam",
+      "email": "mrvaibhavshivam1930@gmail.com",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Vaibhav%20Shivam",
+      "college": "National Institute of Technology",
+      "year": "1st Year",
+      "major": "Computer Science",
+      "primaryRole": "Lead Full-Stack Architect",
+      "bio": "New student on CampusCollab ready to build and collaborate.",
+      "status": "available",
+      "skills": [
+        {
+          "name": "Next.js",
+          "level": 4,
+          "category": "Development"
+        },
+        {
+          "name": "React",
+          "level": 4,
+          "category": "Development"
+        },
+        {
+          "name": "Node.js",
+          "level": 4,
+          "category": "Development"
+        },
+        {
+          "name": "TypeScript",
+          "level": 4,
+          "category": "Development"
+        }
+      ],
+      "projectCount": 0,
+      "hackathonCount": 0,
+      "interests": [
+        "Projects",
+        "Hackathons"
+      ],
+      "proofs": []
+    },
+    "createdAt": "2026-09-19T12:15:13.196Z"
+  }
+]
