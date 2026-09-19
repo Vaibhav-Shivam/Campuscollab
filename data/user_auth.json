@@ -1,7 +1,7 @@
 [
   {
     "email": "mrvaibhavshivam1930@gmail.com",
-    "passwordHash": "7bc386ced98cdeed30ebdf9f10abea758203411776e27b0343dc4dfdbb6e0051",
+    "passwordHash": "ea7ef4b17b450b54a0dee8938f8213f44740dc310e07ee44f5f38992c4481624",
     "studentId": "student-1789820112921",
     "name": "Vaibhav Shivam",
     "college": "National Institute of Technology",
@@ -47,5 +47,55 @@
       "proofs": []
     },
     "createdAt": "2026-09-19T12:15:13.196Z"
+  },
+  {
+    "email": "testuser@college.edu",
+    "passwordHash": "ea7ef4b17b450b54a0dee8938f8213f44740dc310e07ee44f5f38992c4481624",
+    "studentId": "student-1789819780125",
+    "createdAt": "2026-09-19T12:09:40.486Z"
+  },
+  {
+    "email": "shivam@test.edu",
+    "passwordHash": "eecfbbdaa0aca8c96931845d01ec923aa28683a2cafea21b8605686932d1a7ed",
+    "studentId": "student-1789820062097",
+    "name": "Shivam Sharma",
+    "college": "IIT Delhi",
+    "student": {
+      "id": "student-1789820062097",
+      "name": "Shivam Sharma",
+      "email": "shivam@test.edu",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Shivam%20Sharma",
+      "college": "IIT Delhi",
+      "year": "1st Year",
+      "major": "AI Engineering",
+      "primaryRole": "AI Specialist",
+      "bio": "New student on CampusCollab ready to build and collaborate.",
+      "status": "available",
+      "skills": [
+        {
+          "name": "PyTorch",
+          "level": 4,
+          "category": "AI/ML"
+        },
+        {
+          "name": "Python",
+          "level": 4,
+          "category": "Development"
+        },
+        {
+          "name": "FastAPI",
+          "level": 4,
+          "category": "Development"
+        }
+      ],
+      "projectCount": 0,
+      "hackathonCount": 0,
+      "interests": [
+        "Projects",
+        "Hackathons"
+      ],
+      "proofs": []
+    },
+    "createdAt": "2026-09-19T12:14:22.398Z"
   }
 ]

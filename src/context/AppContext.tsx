@@ -15,10 +15,11 @@ interface AppContextType {
   isAuthenticated: boolean;
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
-  authMode: 'login' | 'signup';
-  setAuthMode: (mode: 'login' | 'signup') => void;
+  authMode: 'login' | 'signup' | 'forgot';
+  setAuthMode: (mode: 'login' | 'signup' | 'forgot') => void;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (formData: any) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (email: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   logout: () => void;
   switchUser: (studentId: string) => void;
   updateUserStatus: (status: AvailabilityStatus, lookingForRole?: string) => void;
@@ -58,7 +59,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot'>('login');
   const [isHydrated, setIsHydrated] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -360,6 +361,48 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message || 'Network error during signup.' };
+    }
+  };
+
+  const resetPassword = async (email: string, newPassword: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail, newPassword })
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Password reset failed.' };
+      }
+
+      // Update client local cache of saved credentials if available
+      try {
+        const existingRaw = localStorage.getItem(STORAGE_KEYS.SAVED_CREDENTIALS);
+        if (existingRaw) {
+          const list = JSON.parse(existingRaw);
+          const updated = list.map((c: any) => {
+            if (c.email && c.email.toLowerCase() === normalizedEmail) {
+              return {
+                ...c,
+                password: newPassword,
+                formData: c.formData ? { ...c.formData, password: newPassword } : undefined
+              };
+            }
+            return c;
+          });
+          localStorage.setItem(STORAGE_KEYS.SAVED_CREDENTIALS, JSON.stringify(updated));
+        }
+      } catch (e) {
+        console.warn('Failed to update saved credentials cache on reset:', e);
+      }
+
+      showToast('Password Reset Successfully! 🔑', 'success', 'You can now sign in with your new password.');
+      return { success: true, message: data.message };
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Network error during password reset.' };
     }
   };
 
@@ -698,6 +741,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setAuthMode,
         login,
         signup,
+        resetPassword,
         logout,
         switchUser,
         updateUserStatus,

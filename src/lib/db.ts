@@ -623,12 +623,7 @@ export async function saveUserAuth(
 export async function getUserAuth(email: string): Promise<LocalAuthRecord | null> {
   const normEmail = email.trim().toLowerCase();
 
-  // 1. Check in-memory
-  if (globalStore.__cc_auth?.has(normEmail)) {
-    return globalStore.__cc_auth.get(normEmail)!;
-  }
-
-  // 2. Check local stores
+  // 1. Check local persistent stores first (primary & backup files for cross-process/worker synchronization)
   const localAuths = getLocalUserAuth();
   const found = localAuths.find((a) => a.email.toLowerCase() === normEmail);
   if (found) {
@@ -636,6 +631,11 @@ export async function getUserAuth(email: string): Promise<LocalAuthRecord | null
       globalStore.__cc_auth.set(normEmail, found);
     }
     return found;
+  }
+
+  // 2. Fallback to in-memory cache
+  if (globalStore.__cc_auth?.has(normEmail)) {
+    return globalStore.__cc_auth.get(normEmail)!;
   }
 
   // 3. Check DynamoDB
@@ -668,4 +668,63 @@ export async function getUserAuth(email: string): Promise<LocalAuthRecord | null
     console.warn('[DB] Error getting user auth record from DynamoDB:', error);
     return null;
   }
+}
+
+export async function updateUserPassword(email: string, newPasswordHash: string): Promise<boolean> {
+  const normEmail = email.trim().toLowerCase();
+
+  // 1. Get existing auth or student
+  const auth = await getUserAuth(normEmail);
+  const student = await findStudentByEmail(normEmail);
+
+  if (!auth && !student) {
+    return false;
+  }
+
+  const studentId = auth?.studentId || student?.id || `student-${Date.now()}`;
+  const studentProfile = auth?.student || student || undefined;
+
+  // 2. Save updated auth record in in-memory and local disk tiers
+  const updatedRecord: LocalAuthRecord = {
+    email: normEmail,
+    passwordHash: newPasswordHash,
+    studentId,
+    name: auth?.name || student?.name,
+    college: auth?.college || student?.college,
+    student: studentProfile,
+    createdAt: auth?.createdAt || new Date().toISOString()
+  };
+
+  saveLocalUserAuthRecord(updatedRecord);
+
+  // 3. Update in DynamoDB if configured
+  const client = getDocClient();
+  if (client) {
+    try {
+      const item: Record<string, any> = {
+        pk: `USER#${normEmail}`,
+        sk: 'AUTH',
+        email: normEmail,
+        passwordHash: newPasswordHash,
+        studentId,
+        updatedAt: new Date().toISOString(),
+        createdAt: auth?.createdAt || new Date().toISOString()
+      };
+      if (studentProfile) {
+        item.student = studentProfile;
+        item.name = studentProfile.name;
+        item.college = studentProfile.college;
+      }
+      await client.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: item
+        })
+      );
+    } catch (err) {
+      console.warn('[DB] Failed to update password in DynamoDB, saved locally:', err);
+    }
+  }
+
+  return true;
 }

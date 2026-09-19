@@ -1,25 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { X, LogIn, UserPlus, Sparkles, AlertCircle, ShieldCheck } from 'lucide-react';
+import { X, LogIn, UserPlus, Sparkles, AlertCircle, ShieldCheck, KeyRound, CheckCircle2 } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultMode?: 'login' | 'signup' | 'admin';
+  defaultMode?: 'login' | 'signup' | 'admin' | 'forgot';
 }
 
 export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalProps) {
-  const { login, signup, loginAsAdmin, showToast } = useApp();
-  const [mode, setMode] = useState<'login' | 'signup' | 'admin'>(defaultMode);
+  const { login, signup, loginAsAdmin, resetPassword, showToast } = useApp();
+  const [mode, setMode] = useState<'login' | 'signup' | 'admin' | 'forgot'>(defaultMode);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [adminPasskey, setAdminPasskey] = useState('');
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  // Reset password state
+  const [resetEmail, setResetEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setMode(defaultMode);
+      setErrorMessage('');
+      setSuccessMessage('');
+    }
+  }, [isOpen, defaultMode]);
 
   // Signup form state
   const [name, setName] = useState('');
@@ -84,6 +98,46 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
     }
   };
 
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const targetEmail = (resetEmail || loginEmail).trim();
+    if (!targetEmail) {
+      setErrorMessage('Please enter your registered email address.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setErrorMessage('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMessage('New passwords do not match. Please check again.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await resetPassword(targetEmail, newPassword);
+      if (res.success) {
+        setSuccessMessage('Password reset successfully! You can now sign in.');
+        setLoginEmail(targetEmail);
+        setLoginPassword(newPassword);
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setErrorMessage(res.error || 'Password reset failed.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'An error occurred during password reset.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -125,22 +179,59 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
         <h2 className="text-2xl font-black tracking-tight mb-1">
           {mode === 'login' && 'Welcome Back, Creator'}
           {mode === 'signup' && 'Create Your Student Profile'}
+          {mode === 'forgot' && 'Reset Your Password'}
           {mode === 'admin' && 'Platform Admin Portal'}
         </h2>
         <p className="text-xs font-medium text-neutral-600 mb-6">
           {mode === 'login' && 'Sign in to access your projects, messages, and team requests.'}
           {mode === 'signup' && 'Join verified student collaborators building real projects & hackathons.'}
+          {mode === 'forgot' && 'Enter your registered email and choose a new password.'}
           {mode === 'admin' && 'Enter your secret Administrator passkey to unlock administrative features.'}
         </p>
 
         {/* Mode Toggle Tabs */}
-        {mode !== 'admin' ? (
+        {mode === 'admin' ? (
+          <div className="mb-6 flex items-center justify-between bg-black text-white p-2.5 rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+            <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5 pl-2">
+              <span>👑</span> Administrator Verification
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setErrorMessage('');
+                setSuccessMessage('');
+              }}
+              className="text-xs font-bold bg-white text-black px-2.5 py-1 rounded-lg border border-black hover:bg-[#FFDE59] cursor-pointer"
+            >
+              Back to Login
+            </button>
+          </div>
+        ) : mode === 'forgot' ? (
+          <div className="mb-6 flex items-center justify-between bg-[#FF70A6] text-black p-2.5 rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+            <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5 pl-2">
+              <span>🔑</span> Password Recovery
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setErrorMessage('');
+                setSuccessMessage('');
+              }}
+              className="text-xs font-bold bg-white text-black px-2.5 py-1 rounded-lg border border-black hover:bg-[#FFDE59] cursor-pointer"
+            >
+              Back to Login
+            </button>
+          </div>
+        ) : (
           <div className="grid grid-cols-2 gap-2 p-1.5 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] mb-6">
             <button
               type="button"
               onClick={() => {
                 setMode('login');
                 setErrorMessage('');
+                setSuccessMessage('');
               }}
               className={`py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                 mode === 'login'
@@ -158,6 +249,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
               onClick={() => {
                 setMode('signup');
                 setErrorMessage('');
+                setSuccessMessage('');
               }}
               className={`py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                 mode === 'signup'
@@ -171,22 +263,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
               </div>
             </button>
           </div>
-        ) : (
-          <div className="mb-6 flex items-center justify-between bg-black text-white p-2.5 rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
-            <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5 pl-2">
-              <span>👑</span> Administrator Verification
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setMode('login');
-                setErrorMessage('');
-              }}
-              className="text-xs font-bold bg-white text-black px-2.5 py-1 rounded-lg border border-black hover:bg-[#FFDE59] cursor-pointer"
-            >
-              Back to Login
-            </button>
-          </div>
         )}
 
         {/* Error Banner */}
@@ -197,8 +273,31 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
           </div>
         )}
 
+        {/* Success Banner */}
+        {successMessage && (
+          <div className="mb-5 p-3.5 bg-[#E8F8F0] border-2 border-[#166534] text-[#166534] rounded-xl text-xs font-bold flex flex-col gap-2 shadow-[2px_2px_0px_0px_#000]">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#166534]" />
+              <span>{successMessage}</span>
+            </div>
+            {mode === 'forgot' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setSuccessMessage('');
+                  setErrorMessage('');
+                }}
+                className="self-start mt-1 px-3 py-1.5 bg-[#38E54D] text-black border-2 border-black rounded-lg text-xs font-black shadow-[2px_2px_0px_0px_#000] hover:translate-y-0.5 cursor-pointer"
+              >
+                Proceed to Sign In →
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Login Form */}
-        {mode === 'login' ? (
+        {mode === 'login' && (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-black uppercase tracking-wider mb-1">
@@ -215,9 +314,23 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase tracking-wider mb-1">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-black uppercase tracking-wider">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetEmail(loginEmail);
+                    setMode('forgot');
+                    setErrorMessage('');
+                    setSuccessMessage('');
+                  }}
+                  className="text-[11px] font-bold text-neutral-600 hover:text-black underline cursor-pointer"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <input
                 type="password"
                 required
@@ -236,8 +349,10 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
               {loading ? 'Authenticating...' : 'Sign In →'}
             </button>
           </form>
-        ) : (
-          /* Sign Up Form */
+        )}
+
+        {/* Sign Up Form */}
+        {mode === 'signup' && (
           <form onSubmit={handleSignupSubmit} className="space-y-3.5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -358,6 +473,64 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
           </form>
         )}
 
+        {/* Forgot Password Form */}
+        {mode === 'forgot' && (
+          <form onSubmit={handleResetSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                Registered Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="you@college.edu"
+                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                New Password (min 6 characters)
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 py-3 bg-[#FFDE59] hover:bg-[#ebd04f] text-black font-black text-sm uppercase tracking-wider border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_#000] transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <KeyRound className="w-4 h-4" />
+              {loading ? 'Updating Password...' : 'Reset Password 🔑'}
+            </button>
+          </form>
+        )}
+
         {/* Admin Form */}
         {mode === 'admin' && (
           <form onSubmit={handleAdminSubmit} className="space-y-4">
@@ -396,6 +569,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
             onClick={() => {
               setMode(mode === 'admin' ? 'login' : 'admin');
               setErrorMessage('');
+              setSuccessMessage('');
             }}
             className="text-[11px] font-bold text-stone-400 hover:text-black transition-colors inline-flex items-center gap-1.5 cursor-pointer"
           >

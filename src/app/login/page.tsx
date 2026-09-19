@@ -4,21 +4,25 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { LogIn, ArrowLeft, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
+import { LogIn, ArrowLeft, ShieldCheck, Sparkles, AlertCircle, KeyRound, CheckCircle2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loginAsAdmin } = useApp();
+  const { login, loginAsAdmin, resetPassword } = useApp();
+  const [view, setView] = useState<'login' | 'forgot' | 'admin'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [adminPasskey, setAdminPasskey] = useState('');
-  const [isAdminMode, setIsAdminMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessMessage('');
     setLoading(true);
 
     const res = await login(email, password);
@@ -31,9 +35,39 @@ export default function LoginPage() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (newPassword.length < 6) {
+      setErrorMessage('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMessage('New passwords do not match. Please re-enter.');
+      return;
+    }
+
+    setLoading(true);
+    const res = await resetPassword(email, newPassword);
+    setLoading(false);
+
+    if (res.success) {
+      setSuccessMessage('Password has been successfully updated! You can now sign in.');
+      setPassword(newPassword);
+      setNewPassword('');
+      setConfirmPassword('');
+    } else {
+      setErrorMessage(res.error || 'Password reset failed.');
+    }
+  };
+
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessMessage('');
     setLoading(true);
 
     const res = loginAsAdmin(adminPasskey);
@@ -60,23 +94,31 @@ export default function LoginPage() {
 
         <div className="flex items-center gap-2 mb-2">
           <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md border border-black shadow-[1.5px_1.5px_0px_0px_#000] ${
-            isAdminMode ? 'bg-black text-white' : 'bg-[#FFDE59] text-black'
+            view === 'admin'
+              ? 'bg-black text-white'
+              : view === 'forgot'
+              ? 'bg-[#FF70A6] text-black'
+              : 'bg-[#FFDE59] text-black'
           }`}>
-            {isAdminMode ? '👑 Administrator Portal' : 'Student Sign In'}
+            {view === 'admin' && '👑 Administrator Portal'}
+            {view === 'forgot' && '🔑 Password Recovery'}
+            {view === 'login' && 'Student Sign In'}
           </span>
           <span className="flex items-center gap-1 text-[10px] font-bold text-neutral-600">
             <ShieldCheck className="w-3.5 h-3.5 text-[#38E54D]" />
-            {isAdminMode ? 'Passkey Verified' : 'Encrypted'}
+            {view === 'admin' ? 'Passkey Verified' : 'Encrypted & Secure'}
           </span>
         </div>
 
         <h1 className="text-3xl font-black tracking-tight mb-1">
-          {isAdminMode ? 'Admin Portal' : 'Welcome Back'}
+          {view === 'admin' && 'Admin Portal'}
+          {view === 'forgot' && 'Reset Password'}
+          {view === 'login' && 'Welcome Back'}
         </h1>
         <p className="text-xs font-medium text-neutral-600 mb-6">
-          {isAdminMode
-            ? 'Enter your administrator passkey to unlock persona switching and site controls.'
-            : 'Access your teams, hackathon applications, and student network.'}
+          {view === 'admin' && 'Enter your administrator passkey to unlock persona switching and site controls.'}
+          {view === 'forgot' && 'Enter your registered email and choose a new password to restore access.'}
+          {view === 'login' && 'Access your teams, hackathon applications, and student network.'}
         </p>
 
         {errorMessage && (
@@ -86,7 +128,29 @@ export default function LoginPage() {
           </div>
         )}
 
-        {!isAdminMode ? (
+        {successMessage && (
+          <div className="mb-4 p-3.5 bg-[#E8F8F0] border-2 border-[#166534] text-[#166534] rounded-xl text-xs font-bold flex flex-col gap-2 shadow-[2px_2px_0px_0px_#000]">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#166534]" />
+              <span>{successMessage}</span>
+            </div>
+            {view === 'forgot' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setView('login');
+                  setSuccessMessage('');
+                  setErrorMessage('');
+                }}
+                className="self-start mt-1 px-3 py-1.5 bg-[#38E54D] text-black border-2 border-black rounded-lg text-xs font-black shadow-[2px_2px_0px_0px_#000] hover:translate-y-0.5 cursor-pointer"
+              >
+                Proceed to Sign In →
+              </button>
+            )}
+          </div>
+        )}
+
+        {view === 'login' && (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-black uppercase tracking-wider mb-1">
@@ -103,9 +167,22 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase tracking-wider mb-1">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-black uppercase tracking-wider">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setView('forgot');
+                    setErrorMessage('');
+                    setSuccessMessage('');
+                  }}
+                  className="text-[11px] font-bold text-neutral-600 hover:text-black underline cursor-pointer"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <input
                 type="password"
                 required
@@ -125,7 +202,66 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-        ) : (
+        )}
+
+        {view === 'forgot' && (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                Registered Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@college.edu"
+                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                New Password (min 6 characters)
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-[#FFDE59] hover:bg-[#ebd04f] text-black font-black text-sm uppercase tracking-wider border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_#000] transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <KeyRound className="w-4 h-4" />
+              {loading ? 'Updating Password...' : 'Reset Password 🔑'}
+            </button>
+          </form>
+        )}
+
+        {view === 'admin' && (
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div className="p-3 bg-[#FFDE59]/25 border-2 border-black rounded-xl text-xs font-bold text-black flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#38E54D] shrink-0" />
@@ -157,19 +293,34 @@ export default function LoginPage() {
         )}
 
         <div className="mt-6 text-center text-xs font-bold text-neutral-600">
-          {!isAdminMode ? (
+          {view === 'login' && (
             <>
               Don&apos;t have a campus account?{' '}
               <Link href="/signup" className="text-black underline font-black hover:text-[#FF70A6]">
                 Sign up here
               </Link>
             </>
-          ) : (
+          )}
+          {view === 'forgot' && (
             <button
               type="button"
               onClick={() => {
-                setIsAdminMode(false);
+                setView('login');
                 setErrorMessage('');
+                setSuccessMessage('');
+              }}
+              className="text-black underline font-black hover:text-[#FFDE59] cursor-pointer"
+            >
+              ← Back to Student Sign In
+            </button>
+          )}
+          {view === 'admin' && (
+            <button
+              type="button"
+              onClick={() => {
+                setView('login');
+                setErrorMessage('');
+                setSuccessMessage('');
               }}
               className="text-black underline font-black hover:text-[#FF70A6] cursor-pointer"
             >
@@ -179,13 +330,14 @@ export default function LoginPage() {
         </div>
 
         {/* Discreet Admin Portal Toggle */}
-        {!isAdminMode && (
+        {view !== 'admin' && (
           <div className="mt-6 pt-4 border-t border-stone-200 text-center">
             <button
               type="button"
               onClick={() => {
-                setIsAdminMode(true);
+                setView('admin');
                 setErrorMessage('');
+                setSuccessMessage('');
               }}
               className="text-[11px] font-bold text-stone-400 hover:text-black transition-colors inline-flex items-center gap-1.5 cursor-pointer"
             >
