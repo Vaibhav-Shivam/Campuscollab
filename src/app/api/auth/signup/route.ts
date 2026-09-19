@@ -53,9 +53,7 @@ export async function POST(request: Request) {
     const parsedSkills = Array.isArray(skills) && skills.length > 0
       ? skills.map((s: string | { name: string; level: number; category: string }) => {
           const skillName = typeof s === 'string' ? s.trim() : (s?.name || '').trim();
-          const skillCat = typeof s === 'object' && s?.category && s.category !== 'General'
-            ? s.category
-            : inferSkillCategory(skillName);
+          const skillCat = inferSkillCategory(skillName);
           return {
             name: skillName,
             level: typeof s === 'object' && s?.level ? s.level : 4,

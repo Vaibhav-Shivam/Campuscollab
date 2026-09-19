@@ -4,104 +4,54 @@
  * for campus talent discovery and filtering.
  */
 
+const AI_REGEX = /\b(ai|ml|machine\s+learning|deep\s+learning|pytorch|tensorflow|keras|nlp|vision|computer\s+vision|opencv|llm|llms|rag|langchain|langgraph|llama|gpt|openai|data\s+science|scikit|scikit-learn|pandas|numpy|neural|analytics|data\s+analysis|big\s+data|reinforcement\s+learning|genai|gen-ai|generative\s+ai|agentic)\b/i;
+const DESIGN_REGEX = /\b(figma|ui|ux|ui\/ux|design|designer|wireframing|prototyping|photoshop|illustrator|blender|3d|graphic|graphics|visual|product\s+design|interaction|framer|canva|typography|user\s+research|design\s+systems)\b/i;
+const VIDEO_REGEX = /\b(video|videography|video\s+editing|premiere|premiere\s+pro|after\s+effects|davinci|resolve|final\s+cut|animation|motion|motion\s+design|vfx|cinematography|sound\s+design|audio)\b/i;
+const CONTENT_REGEX = /\b(content|content\s+writing|copywriting|technical\s+writing|copy|seo|marketing|blog|blogging|documentation|technical\s+writer|storytelling|journalism|community|social\s+media)\b/i;
+
 export function inferSkillCategory(rawName: string): string {
   if (!rawName) return 'Development';
-  const lower = rawName.toLowerCase().trim();
+  const trimmed = rawName.trim();
 
-  // Design
-  if (
-    lower.includes('figma') ||
-    lower.includes('ui') ||
-    lower.includes('ux') ||
-    lower.includes('design') ||
-    lower.includes('wirefram') ||
-    lower.includes('prototyp') ||
-    lower.includes('photoshop') ||
-    lower.includes('illustrator') ||
-    lower.includes('blender') ||
-    lower.includes('3d') ||
-    lower.includes('graphic') ||
-    lower.includes('visual') ||
-    lower.includes('product design')
-  ) {
-    return 'Design';
-  }
+  // 1. Check specific regex patterns with word boundaries
+  if (AI_REGEX.test(trimmed)) return 'AI/ML';
+  if (VIDEO_REGEX.test(trimmed)) return 'Video';
+  if (DESIGN_REGEX.test(trimmed)) return 'Design';
+  if (CONTENT_REGEX.test(trimmed)) return 'Content';
 
-  // AI / ML / Data
-  if (
-    lower.includes('ai') ||
-    lower.includes('ml') ||
-    lower.includes('machine learning') ||
-    lower.includes('deep learning') ||
-    lower.includes('pytorch') ||
-    lower.includes('tensorflow') ||
-    lower.includes('nlp') ||
-    lower.includes('vision') ||
-    lower.includes('opencv') ||
-    lower.includes('llm') ||
-    lower.includes('langchain') ||
-    lower.includes('data science') ||
-    lower.includes('scikit') ||
-    lower.includes('neural') ||
-    lower.includes('analytics')
-  ) {
-    return 'AI/ML';
-  }
-
-  // Video & Motion
-  if (
-    lower.includes('video') ||
-    lower.includes('premiere') ||
-    lower.includes('after effects') ||
-    lower.includes('davinci') ||
-    lower.includes('final cut') ||
-    lower.includes('animation') ||
-    lower.includes('motion') ||
-    lower.includes('editing') ||
-    lower.includes('vfx')
-  ) {
-    return 'Video';
-  }
-
-  // Content & Marketing
-  if (
-    lower.includes('content') ||
-    lower.includes('writing') ||
-    lower.includes('copywriting') ||
-    lower.includes('seo') ||
-    lower.includes('marketing') ||
-    lower.includes('blog') ||
-    lower.includes('documentation') ||
-    lower.includes('technical writing') ||
-    lower.includes('community')
-  ) {
-    return 'Content';
-  }
-
-  // Default: Development (web, mobile, cloud, backend, systems)
+  // Default: Development (web, mobile, cloud, backend, systems, languages)
   return 'Development';
 }
 
 /**
  * Checks if a student matches a selected category filter.
- * Evaluates skill categories, individual skill names, primary role, and major.
+ * Evaluates primary role, skill categories, individual skill names, major, and project proofs.
  */
 export function matchesStudentCategory(student: any, selectedCategory: string): boolean {
   if (!selectedCategory || selectedCategory === 'All') return true;
   const target = selectedCategory.toLowerCase().trim();
 
   // 1. Check primaryRole
-  const primaryRole = (student.primaryRole || '').toLowerCase();
+  const primaryRole = (student.primaryRole || '').toLowerCase().trim();
   if (primaryRole.includes(target)) return true;
   if (inferSkillCategory(primaryRole).toLowerCase() === target) return true;
 
+  if (target === 'development') {
+    if (/\b(developer|dev|engineer|software|coder|programmer|frontend|backend|fullstack|full-stack|web|mobile|cloud|devops|systems|blockchain|web3)\b/i.test(primaryRole)) {
+      return true;
+    }
+  }
+
   // 2. Check major
-  const major = (student.major || '').toLowerCase();
+  const major = (student.major || '').toLowerCase().trim();
   if (major.includes(target)) return true;
-  if (target === 'development' && (major.includes('computer') || major.includes('engineering') || major.includes('information'))) {
+  if (target === 'development' && /\b(computer|engineering|information|tech|software|cs|it)\b/i.test(major)) {
     return true;
   }
-  if (target === 'design' && (major.includes('design') || major.includes('media') || major.includes('art'))) {
+  if (target === 'design' && /\b(design|media|art|graphics|ux|ui)\b/i.test(major)) {
+    return true;
+  }
+  if (target === 'ai/ml' && /\b(ai|data|intelligence|analytics|machine\s+learning)\b/i.test(major)) {
     return true;
   }
 
@@ -114,6 +64,15 @@ export function matchesStudentCategory(student: any, selectedCategory: string): 
     if (skillCat && skillCat.toLowerCase() === target) return true;
     if (inferSkillCategory(skillName).toLowerCase() === target) return true;
     if (skillName.toLowerCase().includes(target)) return true;
+  }
+
+  // 4. Check project proofs
+  const proofs = Array.isArray(student.proofs) ? student.proofs : [];
+  for (const p of proofs) {
+    const techs = Array.isArray(p.technologies) ? p.technologies : [];
+    for (const t of techs) {
+      if (inferSkillCategory(t).toLowerCase() === target) return true;
+    }
   }
 
   return false;

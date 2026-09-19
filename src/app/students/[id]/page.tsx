@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useApp } from '@/context/AppContext';
+import { Student } from '@/types';
 import StatusBadge from '@/components/StatusBadge';
 import CollabRequestModal from '@/components/CollabRequestModal';
 import EditProfileModal from '@/components/EditProfileModal';
@@ -57,9 +58,44 @@ export default function StudentProfilePage() {
   const { allStudents, currentUser } = useApp();
   const [showCollabModal, setShowCollabModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [cloudStudent, setCloudStudent] = useState<Student | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const studentId = params?.id as string;
-  const student = allStudents.find((s) => s.id === studentId);
+  const localStudent = allStudents.find((s) => s.id === studentId);
+  const student = localStudent || cloudStudent;
+
+  useEffect(() => {
+    if (!localStudent && studentId) {
+      setIsLoading(true);
+      fetch(`/api/students?_t=${Date.now()}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.students)) {
+            const found = data.students.find((s: Student) => s.id === studentId);
+            if (found) {
+              setCloudStudent(found);
+            }
+          }
+        })
+        .catch(() => {})
+        .finally(() => setIsLoading(false));
+    }
+  }, [localStudent, studentId]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4">
+        <div className="bg-white border-[2.5px] border-black rounded-2xl p-8 max-w-md text-center space-y-4 shadow-[5px_5px_0px_0px_#000]">
+          <div className="w-8 h-8 border-3 border-black border-t-transparent rounded-full animate-spin mx-auto" />
+          <h2 className="text-base font-black uppercase text-black">Loading Student Profile...</h2>
+          <p className="text-xs font-medium text-stone-600">
+            Fetching verified student proofs and details from campus network.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!student) {
     return (

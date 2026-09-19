@@ -63,13 +63,11 @@ export async function fetchStudentsFromDB(): Promise<{ students: Student[]; sour
       status: it.status || 'available',
       lookingForRole: it.lookingForRole,
       skills: Array.isArray(it.skills) ? it.skills.map((s: string | { name: string; level: number; category: string }) => {
-        if (typeof s === 'string') {
-          return { name: s, level: 4, category: inferSkillCategory(s) };
-        }
+        const skillName = typeof s === 'string' ? s.trim() : (s?.name || '').trim();
         return {
-          name: s.name || '',
-          level: s.level || 4,
-          category: s.category && s.category !== 'General' ? s.category : inferSkillCategory(s.name || '')
+          name: skillName,
+          level: typeof s === 'object' && s?.level ? s.level : 4,
+          category: inferSkillCategory(skillName)
         };
       }) : [],
       projectCount: it.projectCount || 0,
@@ -83,10 +81,27 @@ export async function fetchStudentsFromDB(): Promise<{ students: Student[]; sour
       figmaUrl: it.figmaUrl
     }));
 
-    // Merge DB students with initialStudents ensuring initial students remain visible if not in DB
+    // Partition students: Real users (timestamp IDs or custom test IDs) FIRST, mock users after
+    const realStudents: Student[] = [];
+    const mockStudentsInDB: Student[] = [];
+    for (const s of students) {
+      if (s.id.match(/^student-[1-6]$/)) {
+        mockStudentsInDB.push(s);
+      } else {
+        realStudents.push(s);
+      }
+    }
+
+    // Sort real students by newest timestamp first
+    realStudents.sort((a, b) => {
+      const timeA = parseInt(a.id.replace('student-', ''), 10) || 0;
+      const timeB = parseInt(b.id.replace('student-', ''), 10) || 0;
+      return timeB - timeA;
+    });
+
     const dbStudentIds = new Set(students.map((s) => s.id));
     const missingMock = initialStudents.filter((s) => !dbStudentIds.has(s.id));
-    const allStudentsList = [...students, ...missingMock];
+    const allStudentsList = [...realStudents, ...mockStudentsInDB, ...missingMock];
 
     return { students: allStudentsList, source: 'dynamodb' };
   } catch (error) {

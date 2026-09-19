@@ -31,6 +31,7 @@ interface AppContextType {
   runSmartMatch: (query: string) => { neededSkills: string[]; availableSkills: string[]; matches: AIMatchResult[] };
   showToast: (title: string, type?: 'success' | 'error' | 'info', description?: string) => void;
   refreshStudents: () => Promise<void>;
+  isRefreshingStudents: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -68,24 +69,55 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }, 4500);
   }, [dismissToast]);
 
+  const [isRefreshingStudents, setIsRefreshingStudents] = useState<boolean>(false);
+
   const refreshStudents = useCallback(async () => {
+    setIsRefreshingStudents(true);
     try {
       const res = await fetch(`/api/students?_t=${Date.now()}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.students) && data.students.length > 0) {
         setStudents((prev) => {
-          const dbStudentMap = new Map(data.students.map((s: Student) => [s.id, s]));
-          // 1. Update existing students with fresh data from database
-          const updatedExisting = prev.map((s) => dbStudentMap.get(s.id) || s);
-          // 2. Identify brand new students from DynamoDB
-          const existingIds = new Set(prev.map((s) => s.id));
-          const brandNew = data.students.filter((s: Student) => !existingIds.has(s.id));
-          // 3. New real signups placed at the front so they are immediately visible
-          return [...brandNew, ...updatedExisting];
+          const serverStudents: Student[] = data.students;
+          const serverStudentMap = new Map(serverStudents.map((s) => [s.id, s]));
+
+          // Preserve any newly created local student that hasn't synced yet
+          const localOnly = prev.filter((s) => !serverStudentMap.has(s.id));
+
+          // Separate real signups from mock students
+          const realStudents: Student[] = [];
+          const mockStudents: Student[] = [];
+
+          for (const s of serverStudents) {
+            if (s.id.startsWith('student-17') || s.id === 'student-live-test' || !s.id.match(/^student-[1-6]$/)) {
+              realStudents.push(s);
+            } else {
+              mockStudents.push(s);
+            }
+          }
+
+          // Sort real students by newest first
+          realStudents.sort((a, b) => {
+            const timeA = parseInt(a.id.replace('student-', ''), 10) || 0;
+            const timeB = parseInt(b.id.replace('student-', ''), 10) || 0;
+            return timeB - timeA;
+          });
+
+          const merged = [...localOnly, ...realStudents, ...mockStudents];
+
+          try {
+            localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(merged));
+          } catch (e) {
+            console.warn('Failed to sync students to localStorage:', e);
+          }
+
+          return merged;
         });
       }
     } catch (err) {
       console.warn('Failed to refresh students from cloud:', err);
+    } finally {
+      setIsRefreshingStudents(false);
     }
   }, []);
 
@@ -158,16 +190,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const loggedUser: Student = data.user;
       setStudents((prev) => {
-        if (!prev.some(s => s.id === loggedUser.id)) {
-          return [loggedUser, ...prev];
+        const updated = [loggedUser, ...prev.filter((s) => s.id !== loggedUser.id)];
+        try {
+          localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(updated));
+        } catch (e) {
+          console.warn('LocalStorage save error on login:', e);
         }
-        return prev;
+        return updated;
       });
 
       setCurrentUserId(loggedUser.id);
       setIsAuthenticated(true);
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, loggedUser.id);
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token || 'demo-token');
+      try {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, loggedUser.id);
+        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token || 'demo-token');
+      } catch (e) {}
 
       showToast(`Welcome back, ${loggedUser.name}! 🎉`, 'success', 'You are now signed in.');
       return { success: true };
@@ -190,11 +227,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       const newUser: Student = data.user;
-      setStudents((prev) => [newUser, ...prev]);
+      setStudents((prev) => {
+        const updated = [newUser, ...prev.filter((s) => s.id !== newUser.id)];
+        try {
+          localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(updated));
+        } catch (e) {
+          console.warn('LocalStorage save error on signup:', e);
+        }
+        return updated;
+      });
+
       setCurrentUserId(newUser.id);
       setIsAuthenticated(true);
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, newUser.id);
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token || 'demo-token');
+      try {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, newUser.id);
+        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token || 'demo-token');
+      } catch (e) {}
 
       showToast(`Welcome to CampusCollab, ${newUser.name}! 🚀`, 'success', 'Your student profile is live.');
       return { success: true };
@@ -504,7 +552,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         toggleEventRegistration,
         runSmartMatch,
         showToast,
-        refreshStudents
+        refreshStudents,
+        isRefreshingStudents
       }}
     >
       {children}

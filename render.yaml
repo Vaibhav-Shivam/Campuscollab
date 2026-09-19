@@ -3,8 +3,8 @@ services:
     name: campuscollab
     runtime: node
     plan: free
-    buildCommand: yarn install && yarn build
-    startCommand: yarn start
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_VERSION
-        value: 20.18.0
+        value: 20
