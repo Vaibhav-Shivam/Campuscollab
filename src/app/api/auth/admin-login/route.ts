@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { signJWT, SESSION_COOKIE_NAME } from '@/lib/auth';
 import { findStudentByEmail, getStudentById } from '@/lib/db';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
-
-const ADMIN_PASSKEY = process.env.ADMIN_PASSKEY || 'vaibhav2026';
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'mrvaibhavshivam1930@gmail.com').toLowerCase();
 
 export async function POST(request: Request) {
   try {
@@ -29,9 +27,23 @@ export async function POST(request: Request) {
       );
     }
 
-    const trimmed = passkey.trim();
-    // Server-side check against environment variable or administrator key
-    const isValid = trimmed === ADMIN_PASSKEY.trim() || trimmed === 'admin2026';
+    const configuredPasskey = process.env.ADMIN_PASSKEY;
+    if (!configuredPasskey || configuredPasskey.trim().length === 0) {
+      console.error('[Admin Auth] ADMIN_PASSKEY is not configured in server environment.');
+      return NextResponse.json(
+        { success: false, error: 'Administrator authentication is not configured on this server.' },
+        { status: 503 }
+      );
+    }
+
+    const trimmedInput = passkey.trim();
+    const targetPasskey = configuredPasskey.trim();
+
+    // Constant-time comparison to prevent timing attacks
+    let isValid = false;
+    if (trimmedInput.length === targetPasskey.length) {
+      isValid = crypto.timingSafeEqual(Buffer.from(trimmedInput), Buffer.from(targetPasskey));
+    }
 
     if (!isValid) {
       return NextResponse.json(
@@ -40,8 +52,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    if (!adminEmail) {
+      return NextResponse.json(
+        { success: false, error: 'Administrator email is not configured on this server.' },
+        { status: 503 }
+      );
+    }
+
     // Look up or construct the Admin user
-    let adminUser = await findStudentByEmail(ADMIN_EMAIL);
+    let adminUser = await findStudentByEmail(adminEmail);
 
     const studentId = adminUser?.id || 'student-1789820112921';
     const name = adminUser?.name || 'Vaibhav Shivam';
@@ -50,7 +70,7 @@ export async function POST(request: Request) {
       adminUser = {
         id: studentId,
         name,
-        email: ADMIN_EMAIL,
+        email: adminEmail,
         avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
         college: 'National Institute of Technology',
         year: 'Lead Administrator',
@@ -73,7 +93,7 @@ export async function POST(request: Request) {
     // Sign a real cryptographic JWT with role: 'admin'
     const token = signJWT({
       userId: studentId,
-      email: ADMIN_EMAIL,
+      email: adminEmail,
       name,
       role: 'admin',
       college: adminUser?.college || 'Platform Administration'

@@ -28,22 +28,15 @@ export async function POST(
       );
     }
 
-    const session = await getSessionFromRequest(request);
-    let userId = session?.userId;
-
-    if (!userId) {
-      try {
-        const body = await request.json();
-        userId = body.userId;
-      } catch {}
-    }
-
-    if (!userId) {
+    const session = getSessionFromRequest(request);
+    if (!session || !session.userId) {
       return NextResponse.json(
-        { success: false, error: 'Authentication or user identity required to RSVP' },
+        { success: false, error: 'Authentication required to RSVP for campus events.' },
         { status: 401 }
       );
     }
+
+    const userId = session.userId;
 
     const result = await toggleEventRegistrationInDB(eventId, userId);
 

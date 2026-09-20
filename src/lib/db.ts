@@ -19,6 +19,15 @@ const BACKUP_STUDENTS_FILE = path.join(BACKUP_DATA_DIR, 'registered_students.jso
 const PRIMARY_AUTH_FILE = path.join(PRIMARY_DATA_DIR, 'user_auth.json');
 const BACKUP_AUTH_FILE = path.join(BACKUP_DATA_DIR, 'user_auth.json');
 
+const PRIMARY_PROJECTS_FILE = path.join(PRIMARY_DATA_DIR, 'projects.json');
+const BACKUP_PROJECTS_FILE = path.join(BACKUP_DATA_DIR, 'projects.json');
+
+const PRIMARY_EVENTS_FILE = path.join(PRIMARY_DATA_DIR, 'events.json');
+const BACKUP_EVENTS_FILE = path.join(BACKUP_DATA_DIR, 'events.json');
+
+const PRIMARY_RSVP_FILE = path.join(PRIMARY_DATA_DIR, 'rsvps.json');
+const BACKUP_RSVP_FILE = path.join(BACKUP_DATA_DIR, 'rsvps.json');
+
 const PRIMARY_REQUESTS_FILE = path.join(PRIMARY_DATA_DIR, 'collaboration_requests.json');
 const BACKUP_REQUESTS_FILE = path.join(BACKUP_DATA_DIR, 'collaboration_requests.json');
 
@@ -334,57 +343,197 @@ export async function saveStudentToDB(student: Student): Promise<boolean> {
   }
 }
 
-export async function fetchProjectsFromDB(): Promise<{ projects: Project[]; source: 'dynamodb' | 'fallback' }> {
-  const client = getDocClient();
-  if (!client) {
-    return { projects: initialProjects, source: 'fallback' };
+function getLocalProjects(): Project[] {
+  const map = new Map<string, Project>();
+  if (globalStore.__cc_projects) {
+    for (const p of globalStore.__cc_projects.values()) {
+      map.set(p.id, p);
+    }
   }
 
-  try {
-    const command = new ScanCommand({
-      TableName: TABLE_NAME,
-      Limit: 50
-    });
-    const response = await client.send(command);
-    const items = (response.Items || []).filter((it) => (it.pk as string)?.startsWith('PROJECT#'));
-
-    if (items.length === 0) {
-      return { projects: initialProjects, source: 'fallback' };
+  const files = [BACKUP_PROJECTS_FILE, PRIMARY_PROJECTS_FILE];
+  for (const f of files) {
+    const raw = safeReadFile(f);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const p of parsed) {
+            if (p && p.id) {
+              map.set(p.id, p);
+              if (globalStore.__cc_projects) {
+                globalStore.__cc_projects.set(p.id, p);
+              }
+            }
+          }
+        }
+      } catch {}
     }
+  }
 
-    const projects: Project[] = items.map((it) => ({
-      id: it.id || (it.pk as string).replace('PROJECT#', ''),
-      title: it.title || 'Untitled Project',
-      tagline: it.tagline || 'Student collaboration project',
-      description: it.description || '',
-      type: it.type || 'Personal',
-      ownerId: it.ownerId || 'student-1789820112921',
-      ownerName: it.ownerName || 'Campus Builder',
-      ownerAvatar: it.ownerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
-      ownerCollege: it.ownerCollege || 'Engineering Institute',
-      createdAt: it.createdAt || 'Recently',
-      requiredSkills: Array.isArray(it.requiredSkills) ? it.requiredSkills : [],
-      currentMembers: it.currentMembers || 1,
-      maxMembers: it.maxMembers || 4,
-      isOpen: it.isOpen !== undefined ? it.isOpen : true,
-      likesCount: it.likesCount || 0,
-      tags: Array.isArray(it.tags) ? it.tags : [],
-      comments: Array.isArray(it.comments) ? it.comments : []
-    }));
+  return Array.from(map.values());
+}
 
-    const dbProjectIds = new Set(projects.map((p) => p.id));
-    const missingMock = initialProjects.filter((p) => !dbProjectIds.has(p.id));
-
-    return { projects: [...projects, ...missingMock], source: 'dynamodb' };
-  } catch (error) {
-    console.warn('[DB] Error scanning projects from DynamoDB, serving mock data:', error);
-    return { projects: initialProjects, source: 'fallback' };
+function saveLocalProject(project: Project): boolean {
+  try {
+    if (globalStore.__cc_projects) {
+      globalStore.__cc_projects.set(project.id, project);
+    }
+    const current = getLocalProjects();
+    const updated = [project, ...current.filter((p) => p.id !== project.id)];
+    const jsonStr = JSON.stringify(updated, null, 2);
+    safeWriteFile(PRIMARY_PROJECTS_FILE, jsonStr);
+    safeWriteFile(BACKUP_PROJECTS_FILE, jsonStr);
+    return true;
+  } catch (err) {
+    console.warn('[DB] Failed to save project to local persistent store:', err);
+    return false;
   }
 }
 
-export async function saveProjectToDB(project: Project): Promise<boolean> {
+function getLocalEvents(): CampusEvent[] {
+  const map = new Map<string, CampusEvent>();
+  const files = [BACKUP_EVENTS_FILE, PRIMARY_EVENTS_FILE];
+  for (const f of files) {
+    const raw = safeReadFile(f);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const e of parsed) {
+            if (e && e.id) map.set(e.id, e);
+          }
+        }
+      } catch {}
+    }
+  }
+  return Array.from(map.values());
+}
+
+export function saveLocalEvent(event: CampusEvent): boolean {
+  try {
+    const current = getLocalEvents();
+    const updated = [event, ...current.filter((e) => e.id !== event.id)];
+    const jsonStr = JSON.stringify(updated, null, 2);
+    safeWriteFile(PRIMARY_EVENTS_FILE, jsonStr);
+    safeWriteFile(BACKUP_EVENTS_FILE, jsonStr);
+    return true;
+  } catch (err) {
+    console.warn('[DB] Failed to save event to local persistent store:', err);
+    return false;
+  }
+}
+
+interface LocalRSVP {
+  eventId: string;
+  userId: string;
+  registeredAt: string;
+}
+
+function getLocalRSVPs(): LocalRSVP[] {
+  const map = new Map<string, LocalRSVP>();
+  const files = [BACKUP_RSVP_FILE, PRIMARY_RSVP_FILE];
+  for (const f of files) {
+    const raw = safeReadFile(f);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const r of parsed) {
+            if (r && r.eventId && r.userId) {
+              map.set(`${r.eventId}:${r.userId}`, r);
+            }
+          }
+        }
+      } catch {}
+    }
+  }
+  return Array.from(map.values());
+}
+
+function toggleLocalRSVP(eventId: string, userId: string): { isRegistered: boolean; attendeesCount: number } {
+  const all = getLocalRSVPs();
+  const key = `${eventId}:${userId}`;
+  const existingIndex = all.findIndex((r) => `${r.eventId}:${r.userId}` === key);
+  let isNowRegistered = false;
+
+  if (existingIndex >= 0) {
+    all.splice(existingIndex, 1);
+    isNowRegistered = false;
+  } else {
+    all.push({
+      eventId,
+      userId,
+      registeredAt: new Date().toISOString()
+    });
+    isNowRegistered = true;
+  }
+
+  const jsonStr = JSON.stringify(all, null, 2);
+  safeWriteFile(PRIMARY_RSVP_FILE, jsonStr);
+  safeWriteFile(BACKUP_RSVP_FILE, jsonStr);
+
+  const attendeesCount = all.filter((r) => r.eventId === eventId).length;
+  return { isRegistered: isNowRegistered, attendeesCount };
+}
+
+export async function fetchProjectsFromDB(): Promise<{ projects: Project[]; source: 'dynamodb' | 'disk' | 'fallback' }> {
+  const localProjects = getLocalProjects();
   const client = getDocClient();
-  if (!client) return false;
+  let dbProjects: Project[] = [];
+
+  if (client) {
+    try {
+      const command = new ScanCommand({
+        TableName: TABLE_NAME,
+        Limit: 50
+      });
+      const response = await client.send(command);
+      const items = (response.Items || []).filter((it) => (it.pk as string)?.startsWith('PROJECT#'));
+
+      dbProjects = items.map((it) => ({
+        id: it.id || (it.pk as string).replace('PROJECT#', ''),
+        title: it.title || 'Untitled Project',
+        tagline: it.tagline || 'Student collaboration project',
+        description: it.description || '',
+        type: it.type || 'Personal',
+        ownerId: it.ownerId || 'student-admin',
+        ownerName: it.ownerName || 'Campus Builder',
+        ownerAvatar: it.ownerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(it.ownerId || 'admin')}`,
+        ownerCollege: it.ownerCollege || 'Engineering Institute',
+        createdAt: it.createdAt || new Date().toISOString(),
+        requiredSkills: Array.isArray(it.requiredSkills) ? it.requiredSkills : [],
+        currentMembers: it.currentMembers || 1,
+        maxMembers: it.maxMembers || 4,
+        isOpen: it.isOpen !== undefined ? it.isOpen : true,
+        likesCount: it.likesCount || 0,
+        tags: Array.isArray(it.tags) ? it.tags : [],
+        comments: Array.isArray(it.comments) ? it.comments : []
+      }));
+    } catch (error) {
+      console.warn('[DB] Error scanning projects from DynamoDB:', error);
+    }
+  }
+
+  const projectMap = new Map<string, Project>();
+  localProjects.forEach((p) => projectMap.set(p.id, p));
+  dbProjects.forEach((p) => projectMap.set(p.id, p));
+
+  const allProjects = Array.from(projectMap.values());
+  if (allProjects.length > 0) {
+    return { projects: allProjects, source: dbProjects.length > 0 ? 'dynamodb' : 'disk' };
+  }
+
+  return { projects: initialProjects, source: 'fallback' };
+}
+
+export async function saveProjectToDB(project: Project): Promise<boolean> {
+  // 1. Always persist to server persistent file store first (guaranteed persistence across restarts)
+  saveLocalProject(project);
+
+  // 2. Also persist to DynamoDB cloud database if connected
+  const client = getDocClient();
+  if (!client) return true;
 
   try {
     const cleanedItem: Record<string, any> = {
@@ -405,51 +554,73 @@ export async function saveProjectToDB(project: Project): Promise<boolean> {
     await client.send(command);
     return true;
   } catch (error) {
-    console.error('[DB] Error saving project to DynamoDB:', error);
-    return false;
+    console.warn('[DB] DynamoDB put failed, project safely preserved on server disk:', error);
+    return true;
   }
 }
 
-export async function fetchEventsFromDB(): Promise<{ events: CampusEvent[]; source: 'dynamodb' | 'fallback' }> {
+export async function fetchEventsFromDB(): Promise<{ events: CampusEvent[]; source: 'dynamodb' | 'disk' | 'fallback' }> {
+  const localEvents = getLocalEvents();
   const client = getDocClient();
-  if (!client) {
-    return { events: initialCampusEvents, source: 'fallback' };
+  let dbEvents: CampusEvent[] = [];
+
+  if (client) {
+    try {
+      const command = new ScanCommand({
+        TableName: TABLE_NAME,
+        Limit: 50
+      });
+      const response = await client.send(command);
+      const items = (response.Items || []).filter((it) => (it.pk as string)?.startsWith('EVENT#'));
+
+      dbEvents = items.map((it) => ({
+        id: it.id || (it.pk as string).replace('EVENT#', ''),
+        title: it.title || 'Campus Event',
+        category: it.category || 'Workshop',
+        date: it.date || 'TBD',
+        location: it.location || 'Campus Auditorium',
+        isOnline: Boolean(it.isOnline),
+        description: it.description || '',
+        organizer: it.organizer || 'Student Club',
+        attendeesCount: it.attendeesCount || 0,
+        isRegistered: Boolean(it.isRegistered),
+        image: it.image || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=600',
+        skillsFocus: Array.isArray(it.skillsFocus) ? it.skillsFocus : []
+      }));
+    } catch (error) {
+      console.warn('[DB] Error scanning events from DynamoDB:', error);
+    }
   }
 
+  const eventMap = new Map<string, CampusEvent>();
+  // Seed with initialCampusEvents if empty
+  initialCampusEvents.forEach((e) => eventMap.set(e.id, e));
+  localEvents.forEach((e) => eventMap.set(e.id, e));
+  dbEvents.forEach((e) => eventMap.set(e.id, e));
+
+  return { events: Array.from(eventMap.values()), source: dbEvents.length > 0 ? 'dynamodb' : 'disk' };
+}
+
+export async function saveEventToDB(event: CampusEvent): Promise<boolean> {
+  saveLocalEvent(event);
+  const client = getDocClient();
+  if (!client) return true;
+
   try {
-    const command = new ScanCommand({
+    const command = new PutCommand({
       TableName: TABLE_NAME,
-      Limit: 50
+      Item: {
+        pk: `EVENT#${event.id}`,
+        sk: 'METADATA',
+        updatedAt: new Date().toISOString(),
+        ...event
+      }
     });
-    const response = await client.send(command);
-    const items = (response.Items || []).filter((it) => (it.pk as string)?.startsWith('EVENT#'));
-
-    if (items.length === 0) {
-      return { events: initialCampusEvents, source: 'fallback' };
-    }
-
-    const events: CampusEvent[] = items.map((it) => ({
-      id: it.id || (it.pk as string).replace('EVENT#', ''),
-      title: it.title || 'Campus Event',
-      category: it.category || 'Workshop',
-      date: it.date || 'TBD',
-      location: it.location || 'Campus Auditorium',
-      isOnline: Boolean(it.isOnline),
-      description: it.description || '',
-      organizer: it.organizer || 'Student Club',
-      attendeesCount: it.attendeesCount || 0,
-      isRegistered: Boolean(it.isRegistered),
-      image: it.image || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=600',
-      skillsFocus: Array.isArray(it.skillsFocus) ? it.skillsFocus : []
-    }));
-
-    const dbEventIds = new Set(events.map((e) => e.id));
-    const missingMock = initialCampusEvents.filter((e) => !dbEventIds.has(e.id));
-
-    return { events: [...events, ...missingMock], source: 'dynamodb' };
+    await client.send(command);
+    return true;
   } catch (error) {
-    console.warn('[DB] Error scanning events from DynamoDB, serving mock data:', error);
-    return { events: initialCampusEvents, source: 'fallback' };
+    console.warn('[DB] Error saving event to DynamoDB:', error);
+    return true;
   }
 }
 
@@ -866,6 +1037,53 @@ export async function getCollaborationRequestsFromDB(userId?: string): Promise<C
   return all;
 }
 
+export async function getCollaborationRequestByIdFromDB(requestId: string): Promise<CollaborationRequest | null> {
+  const local = getLocalRequests();
+  const found = local.find((r) => r.id === requestId);
+  if (found) return found;
+
+  if (globalStore.__cc_requests?.has(requestId)) {
+    return globalStore.__cc_requests.get(requestId)!;
+  }
+
+  const client = getDocClient();
+  if (client) {
+    try {
+      const res = await client.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            pk: `REQ#${requestId}`,
+            sk: 'METADATA'
+          }
+        })
+      );
+      if (res.Item) {
+        const item = res.Item;
+        return {
+          id: item.id || requestId,
+          senderId: item.senderId,
+          senderName: item.senderName,
+          senderAvatar: item.senderAvatar,
+          senderRole: item.senderRole,
+          receiverId: item.receiverId,
+          receiverName: item.receiverName,
+          projectId: item.projectId,
+          projectTitle: item.projectTitle,
+          message: item.message,
+          status: item.status || 'pending',
+          createdAt: item.createdAt || new Date().toISOString(),
+          contactEmail: item.contactEmail
+        };
+      }
+    } catch (err) {
+      console.warn('[DB] Error looking up request by ID:', err);
+    }
+  }
+
+  return null;
+}
+
 export async function updateCollaborationRequestStatusInDB(
   requestId: string,
   status: 'accepted' | 'declined'
@@ -971,35 +1189,14 @@ export async function toggleEventRegistrationInDB(
   eventId: string,
   userId: string
 ): Promise<{ isRegistered: boolean; attendeesCount: number }> {
-  const client = getDocClient();
-  let isNowRegistered = true;
+  // 1. Update local persistent RSVP store and compute accurate attendee count
+  const localResult = toggleLocalRSVP(eventId, userId);
 
+  // 2. Also sync to DynamoDB if connected
+  const client = getDocClient();
   if (client) {
     try {
-      const checkRes = await client.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            pk: `EVENT#${eventId}`,
-            sk: `RSVP#${userId}`
-          }
-        })
-      );
-
-      if (checkRes.Item) {
-        // Unregister
-        await client.send(
-          new DeleteCommand({
-            TableName: TABLE_NAME,
-            Key: {
-              pk: `EVENT#${eventId}`,
-              sk: `RSVP#${userId}`
-            }
-          })
-        );
-        isNowRegistered = false;
-      } else {
-        // Register
+      if (localResult.isRegistered) {
         await client.send(
           new PutCommand({
             TableName: TABLE_NAME,
@@ -1013,14 +1210,23 @@ export async function toggleEventRegistrationInDB(
             }
           })
         );
-        isNowRegistered = true;
+      } else {
+        await client.send(
+          new DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: {
+              pk: `EVENT#${eventId}`,
+              sk: `RSVP#${userId}`
+            }
+          })
+        );
       }
     } catch (err) {
-      console.warn('[DB] Error toggling RSVP in DynamoDB:', err);
+      console.warn('[DB] Error syncing RSVP to DynamoDB:', err);
     }
   }
 
-  return { isRegistered: isNowRegistered, attendeesCount: isNowRegistered ? 1 : 0 };
+  return localResult;
 }
 
 export async function saveNotificationToDB(notification: AppNotification): Promise<boolean> {

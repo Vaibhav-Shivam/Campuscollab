@@ -71,13 +71,22 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  const handlePostComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!commentText.trim()) return;
+  const [isPostingComment, setIsPostingComment] = useState(false);
 
-    addCommentToProject(project.id, commentText.trim(), selectedOfferSkills);
-    setCommentText('');
-    setSelectedOfferSkills([]);
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim() || isPostingComment) return;
+
+    setIsPostingComment(true);
+    try {
+      const success = await addCommentToProject(project.id, commentText.trim(), selectedOfferSkills);
+      if (success) {
+        setCommentText('');
+        setSelectedOfferSkills([]);
+      }
+    } finally {
+      setIsPostingComment(false);
+    }
   };
 
   const isOwner = project.ownerId === currentUser.id;
@@ -257,9 +266,10 @@ export default function ProjectDetailsPage() {
             <div className="flex justify-end pt-1">
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 bg-black hover:bg-[#FFDE59] hover:text-black text-white font-black text-xs uppercase px-5 py-2.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+                disabled={isPostingComment}
+                className="inline-flex items-center gap-2 bg-black hover:bg-[#FFDE59] hover:text-black disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs uppercase px-5 py-2.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
               >
-                <span>Post Offer</span>
+                <span>{isPostingComment ? 'Posting...' : 'Post Offer'}</span>
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>

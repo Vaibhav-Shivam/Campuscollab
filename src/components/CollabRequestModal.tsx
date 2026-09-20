@@ -31,18 +31,26 @@ export default function CollabRequestModal({
     }. Would you like to collaborate?`
   );
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProjectId) {
       alert('Please select a project to collaborate on.');
       return;
     }
-    sendCollaborationRequest(targetStudent.id, selectedProjectId, message);
-    setIsSubmitted(true);
-    setTimeout(() => {
-      onClose();
-    }, 1800);
+    setIsSubmitting(true);
+    try {
+      const res = await sendCollaborationRequest(targetStudent.id, selectedProjectId, message);
+      if (res) {
+        setIsSubmitted(true);
+        setTimeout(() => {
+          onClose();
+        }, 1800);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

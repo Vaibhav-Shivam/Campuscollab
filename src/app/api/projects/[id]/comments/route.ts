@@ -29,7 +29,14 @@ export async function POST(
       );
     }
 
-    const session = await getSessionFromRequest(request);
+    const session = getSessionFromRequest(request);
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required to post comments.' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { content, offeringSkills } = body;
 
@@ -47,20 +54,12 @@ export async function POST(
       );
     }
 
-    // Determine author from authenticated session or provided author metadata
-    let authorId = session?.userId || body.authorId || 'student-guest';
-    let authorName = session?.name || body.authorName || 'Campus Collaborator';
-    let authorAvatar = session?.avatar || body.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400';
-    let authorRole = body.authorRole || 'Student';
-
-    if (session?.userId && !body.authorName) {
-      const student = await getStudentById(session.userId);
-      if (student) {
-        authorName = student.name;
-        authorAvatar = student.avatar;
-        authorRole = student.primaryRole;
-      }
-    }
+    // Determine author strictly from verified session and student database profile
+    const student = await getStudentById(session.userId);
+    const authorId = session.userId;
+    const authorName = student?.name || session.name || 'Campus Student';
+    const authorAvatar = student?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(session.userId)}`;
+    const authorRole = student?.primaryRole || 'Developer';
 
     const newComment: ProjectComment = {
       id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -69,7 +68,7 @@ export async function POST(
       authorAvatar,
       authorRole,
       content: content.trim(),
-      createdAt: 'Just now',
+      createdAt: new Date().toISOString(),
       offeringSkills: Array.isArray(offeringSkills) && offeringSkills.length > 0 ? offeringSkills : undefined
     };
 

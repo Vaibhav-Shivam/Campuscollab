@@ -69,29 +69,38 @@ export default function CreateProjectModal({ onClose, onCreated }: CreateProject
     }, 500);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       alert('Please fill out all required fields.');
       return;
     }
 
-    const newProj = createProject({
-      title,
-      tagline: tagline.trim() || title,
-      description,
-      type,
-      requiredSkills,
-      currentMembers: Number(currentMembers),
-      maxMembers: Number(maxMembers),
-      isOpen: true,
-      tags: [type, ...requiredSkills.slice(0, 2)]
-    });
+    setIsSubmitting(true);
+    try {
+      const newProj = await createProject({
+        title,
+        tagline: tagline.trim() || title,
+        description,
+        type,
+        requiredSkills,
+        currentMembers: Number(currentMembers),
+        maxMembers: Number(maxMembers),
+        isOpen: true,
+        tags: [type, ...requiredSkills.slice(0, 2)]
+      });
 
-    if (onCreated) {
-      onCreated(newProj.id);
+      if (newProj) {
+        if (onCreated) {
+          onCreated(newProj.id);
+        }
+        onClose();
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
   return (
@@ -274,10 +283,11 @@ export default function CreateProjectModal({ onClose, onCreated }: CreateProject
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 text-xs font-black uppercase text-white bg-black hover:bg-[#FFDE59] hover:text-black rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
+              disabled={isSubmitting}
+              className="flex-1 py-2.5 text-xs font-black uppercase text-white bg-black hover:bg-[#FFDE59] hover:text-black disabled:opacity-50 disabled:cursor-not-allowed rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Post Project</span>
+              <span>{isSubmitting ? 'Publishing...' : 'Post Project'}</span>
             </button>
           </div>
         </form>

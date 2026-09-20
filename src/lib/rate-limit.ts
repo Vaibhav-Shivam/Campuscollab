@@ -6,11 +6,12 @@ interface RateLimitRecord {
   resetAt: number;
 }
 
+const MAX_RATE_LIMIT_KEYS = 10000;
 const rateLimitMap = new Map<string, RateLimitRecord>();
 
 // Periodic cleanup of expired entries
 if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
+  const timer = setInterval(() => {
     const now = Date.now();
     for (const [key, record] of rateLimitMap.entries()) {
       if (record.resetAt <= now) {
@@ -18,6 +19,9 @@ if (typeof setInterval !== 'undefined') {
       }
     }
   }, 60 * 1000);
+  if (timer.unref) {
+    timer.unref();
+  }
 }
 
 export function checkRateLimit(

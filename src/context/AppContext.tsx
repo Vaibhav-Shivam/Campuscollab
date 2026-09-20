@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Student, Project, CampusEvent, CollaborationRequest, AIMatchResult, AvailabilityStatus } from '@/types';
+import { Student, Project, CampusEvent, CollaborationRequest, AIMatchResult, AvailabilityStatus, ProjectComment } from '@/types';
 import { initialStudents, initialProjects, initialCampusEvents, initialRequests } from '@/data/mockData';
 import { ToastContainer, ToastMessage } from '@/components/Toast';
 import AuthModal from '@/components/AuthModal';
@@ -24,11 +24,11 @@ interface AppContextType {
   logout: () => void;
   updateUserStatus: (status: AvailabilityStatus, lookingForRole?: string) => void;
   updateUserProfile: (updatedFields: Partial<Student>) => Promise<boolean>;
-  createProject: (newProject: Omit<Project, 'id' | 'createdAt' | 'ownerId' | 'ownerName' | 'ownerAvatar' | 'ownerCollege' | 'comments' | 'likesCount'>) => Project;
-  addCommentToProject: (projectId: string, content: string, offeringSkills?: string[]) => void;
-  sendCollaborationRequest: (receiverId: string, projectId: string, message: string) => CollaborationRequest;
-  respondToRequest: (requestId: string, status: 'accepted' | 'declined') => void;
-  toggleEventRegistration: (eventId: string) => void;
+  createProject: (newProject: Omit<Project, 'id' | 'createdAt' | 'ownerId' | 'ownerName' | 'ownerAvatar' | 'ownerCollege' | 'comments' | 'likesCount'>) => Promise<Project | null>;
+  addCommentToProject: (projectId: string, content: string, offeringSkills?: string[]) => Promise<boolean>;
+  sendCollaborationRequest: (receiverId: string, projectId: string, message: string) => Promise<CollaborationRequest | null>;
+  respondToRequest: (requestId: string, status: 'accepted' | 'declined') => Promise<boolean>;
+  toggleEventRegistration: (eventId: string) => Promise<boolean>;
   runSmartMatch: (query: string) => { neededSkills: string[]; availableSkills: string[]; matches: AIMatchResult[] };
   showToast: (title: string, type?: 'success' | 'error' | 'info', description?: string) => void;
   refreshStudents: () => Promise<void>;
@@ -45,7 +45,6 @@ const STORAGE_KEYS = {
   EVENTS: 'campuscollab_events_v2',
   REQUESTS: 'campuscollab_requests_v2',
   CURRENT_USER_ID: 'campuscollab_current_user_id_v2',
-  AUTH_TOKEN: 'campuscollab_auth_token_v2',
   IS_ADMIN: 'campuscollab_is_admin_v1'
 };
 
@@ -102,13 +101,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       localStorage.removeItem('campuscollab_registered_credentials_v1'); // Purge legacy raw password cache
+      localStorage.removeItem('campuscollab_auth_token_v2'); // Purge legacy insecure JWT localStorage
 
       const savedStudents = localStorage.getItem(STORAGE_KEYS.STUDENTS);
       const savedProjects = localStorage.getItem(STORAGE_KEYS.PROJECTS);
       const savedEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
       const savedRequests = localStorage.getItem(STORAGE_KEYS.REQUESTS);
       const savedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
-      const savedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
       const savedIsAdmin = localStorage.getItem(STORAGE_KEYS.IS_ADMIN);
 
       if (savedStudents) {
@@ -125,10 +124,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (savedRequests) setRequests(JSON.parse(savedRequests));
       if (savedUserId && !savedUserId.match(/^student-[1-6]$/)) {
         setCurrentUserId(savedUserId);
-        setIsAuthenticated(Boolean(savedToken));
       } else {
         setCurrentUserId('');
-        setIsAuthenticated(false);
       }
       setIsAdmin(savedIsAdmin === 'true');
     } catch (e) {
@@ -136,7 +133,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     setIsHydrated(true);
 
-    // Sync authenticated session with server
+    // Sync authenticated session with server (HttpOnly cookie verified)
     fetch('/api/auth/me')
       .then((res) => res.json())
       .then((data) => {
@@ -145,10 +142,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setIsAdmin(Boolean(data.isAdmin));
           if (data.session.userId) {
             setCurrentUserId(data.session.userId);
+            try {
+              localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, data.session.userId);
+            } catch (e) {}
           }
-          if (data.student) {
-            setStudents((prev) => [data.student, ...prev.filter((s) => s.id !== data.student.id)]);
+          const loadedUser = data.user || data.student;
+          if (loadedUser) {
+            setStudents((prev) => [loadedUser, ...prev.filter((s) => s.id !== loadedUser.id)]);
           }
+        } else {
+          setIsAuthenticated(false);
+          setIsAdmin(false);
+          setCurrentUserId('');
+          try {
+            localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+            localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
+          } catch (e) {}
         }
       })
       .catch(() => {});
@@ -261,9 +270,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
         }
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, loggedUser.id);
-        if (data.token) {
-          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
-        }
       } catch (e) {}
 
       showToast(`Welcome back, ${loggedUser.name}! 🎉`, 'success', isAdminEmail ? 'Logged in with Admin privileges.' : 'You are now signed in.');
@@ -305,9 +311,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
         }
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, newUser.id);
-        if (data.token) {
-          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
-        }
       } catch (e) {}
 
       showToast(`Welcome to CampusCollab, ${newUser.name}! 🚀`, 'success', 'Your student profile is live.');
@@ -355,9 +358,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       try {
         localStorage.setItem(STORAGE_KEYS.IS_ADMIN, 'true');
-        if (data.token) {
-          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
-        }
       } catch (e) {}
 
       if (data.user) {
@@ -383,7 +383,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(false);
     setIsAdmin(false);
     try {
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
       localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
       localStorage.removeItem('campuscollab_registered_credentials_v1');
@@ -409,20 +408,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const updateUserProfile = async (updatedFields: Partial<Student>): Promise<boolean> => {
     try {
-      const mergedStudent: Student = {
-        ...currentUser,
-        ...updatedFields,
-        id: currentUser.id
-      };
-
-      // 1. Update state immediately for instant UI responsiveness
-      setStudents((prev) =>
-        prev.map((s) => (s.id === currentUser.id ? mergedStudent : s))
-      );
-
-      showToast('Profile & Proofs Updated! ✨', 'success', 'Your portfolio links and proofs are now public.');
-
-      // 2. Persist to cloud backend / DynamoDB
       const res = await fetch('/api/students', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -431,176 +416,194 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ...updatedFields
         })
       });
+      const data = await res.json();
 
-      if (!res.ok) {
-        console.warn('Student profile update: server status', res.status);
+      if (!res.ok || !data.success) {
+        showToast('Profile Update Failed', 'error', data.error || 'Server error updating profile.');
+        return false;
       }
+
+      const mergedStudent: Student = data.student || {
+        ...currentUser,
+        ...updatedFields,
+        id: currentUser.id
+      };
+
+      setStudents((prev) =>
+        prev.map((s) => (s.id === currentUser.id ? mergedStudent : s))
+      );
+
+      showToast('Profile & Proofs Updated! ✨', 'success', 'Your portfolio links and proofs are now public.');
       return true;
     } catch (err: any) {
       console.error('Failed to sync profile update to server:', err);
-      showToast('Saved Locally', 'info', 'Saved in browser storage (offline mode).');
-      return true;
+      showToast('Connection Error', 'error', 'Failed to connect to server.');
+      return false;
     }
   };
 
-  const createProject = (
+  const createProject = async (
     newProject: Omit<
       Project,
       'id' | 'createdAt' | 'ownerId' | 'ownerName' | 'ownerAvatar' | 'ownerCollege' | 'comments' | 'likesCount'
     >
-  ): Project => {
-    const created: Project = {
-      ...newProject,
-      id: `project-${Date.now()}`,
-      createdAt: 'Just now',
-      ownerId: currentUser.id,
-      ownerName: currentUser.name,
-      ownerAvatar: currentUser.avatar,
-      ownerCollege: currentUser.college,
-      likesCount: 1,
-      comments: []
-    };
+  ): Promise<Project | null> => {
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProject)
+      });
+      const data = await res.json();
 
-    setProjects((prev) => [created, ...prev]);
-    showToast('Project Published! 🚀', 'success', `"${created.title}" is now live for applications.`);
+      if (!res.ok || !data.success || !data.project) {
+        showToast('Failed to Post Project', 'error', data.error || 'Could not publish project.');
+        return null;
+      }
 
-    fetch('/api/projects', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(created)
-    }).catch((err) => console.warn('Cloud persistence queued:', err));
-
-    return created;
+      const created: Project = data.project;
+      setProjects((prev) => [created, ...prev.filter((p) => p.id !== created.id)]);
+      showToast('Project Published! 🚀', 'success', `"${created.title}" is now live for applications.`);
+      return created;
+    } catch (err: any) {
+      showToast('Network Error', 'error', 'Could not save project to server.');
+      return null;
+    }
   };
 
-  const addCommentToProject = (projectId: string, content: string, offeringSkills?: string[]) => {
-    const newComment = {
-      id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      authorId: currentUser.id,
-      authorName: currentUser.name,
-      authorAvatar: currentUser.avatar,
-      authorRole: currentUser.primaryRole,
-      content: content.trim(),
-      createdAt: 'Just now',
-      offeringSkills: offeringSkills && offeringSkills.length > 0 ? offeringSkills : undefined
-    };
+  const addCommentToProject = async (projectId: string, content: string, offeringSkills?: string[]): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: content.trim(),
+          offeringSkills
+        })
+      });
+      const data = await res.json();
 
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id === projectId ? { ...p, comments: [...(p.comments || []), newComment] } : p
-      )
-    );
-    showToast('Comment posted! 💬', 'success');
+      if (!res.ok || !data.success || !data.comment) {
+        showToast('Comment Failed', 'error', data.error || 'Failed to post comment.');
+        return false;
+      }
 
-    fetch(`/api/projects/${projectId}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        content: content.trim(),
-        offeringSkills,
-        authorId: currentUser.id,
-        authorName: currentUser.name,
-        authorAvatar: currentUser.avatar,
-        authorRole: currentUser.primaryRole
-      })
-    }).catch((err) => console.warn('Comment cloud persistence error:', err));
+      const newComment: ProjectComment = data.comment;
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === projectId ? { ...p, comments: [...(p.comments || []), newComment] } : p
+        )
+      );
+      showToast('Comment posted! 💬', 'success');
+      return true;
+    } catch (err) {
+      showToast('Network Error', 'error', 'Could not post comment to server.');
+      return false;
+    }
   };
 
-  const sendCollaborationRequest = (
+  const sendCollaborationRequest = async (
     receiverId: string,
     projectId: string,
     message: string
-  ): CollaborationRequest => {
-    const targetStudent = students.find((s) => s.id === receiverId);
-    const targetProject = projects.find((p) => p.id === projectId);
+  ): Promise<CollaborationRequest | null> => {
+    try {
+      const targetStudent = students.find((s) => s.id === receiverId);
+      const targetProject = projects.find((p) => p.id === projectId);
 
-    const newReq: CollaborationRequest = {
-      id: `req-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      senderAvatar: currentUser.avatar,
-      senderRole: currentUser.primaryRole,
-      receiverId,
-      receiverName: targetStudent ? targetStudent.name : 'Teammate',
-      projectId,
-      projectTitle: targetProject ? targetProject.title : 'Project Collaboration',
-      message: message.trim(),
-      status: 'pending',
-      createdAt: 'Just now',
-      contactEmail: currentUser.email
-    };
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receiverId,
+          receiverName: targetStudent ? targetStudent.name : undefined,
+          projectId,
+          projectTitle: targetProject ? targetProject.title : undefined,
+          message: message.trim(),
+          contactEmail: currentUser.email
+        })
+      });
+      const data = await res.json();
 
-    setRequests((prev) => [newReq, ...prev]);
-    showToast('Application Sent! 📬', 'success', `Request delivered to ${targetStudent?.name || 'project owner'}`);
+      if (!res.ok || !data.success || !data.request) {
+        showToast('Request Failed', 'error', data.error || 'Could not send request.');
+        return null;
+      }
 
-    fetch('/api/requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        receiverId,
-        projectId,
-        message: message.trim(),
-        contactEmail: currentUser.email
-      })
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.request) {
-          setRequests((prev) => [data.request, ...prev.filter((r) => r.id !== newReq.id)]);
-        }
-      })
-      .catch((err) => console.warn('Request cloud persistence error:', err));
-
-    return newReq;
+      const createdReq: CollaborationRequest = data.request;
+      setRequests((prev) => [createdReq, ...prev.filter((r) => r.id !== createdReq.id)]);
+      showToast('Application Sent! 📬', 'success', `Request delivered to ${targetStudent?.name || 'project owner'}`);
+      return createdReq;
+    } catch (err: any) {
+      showToast('Network Error', 'error', 'Could not deliver collaboration request.');
+      return null;
+    }
   };
 
-  const respondToRequest = (requestId: string, status: 'accepted' | 'declined') => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === requestId ? { ...r, status } : r))
-    );
-    showToast(
-      status === 'accepted' ? 'Collaboration Accepted! 🎉' : 'Request declined',
-      status === 'accepted' ? 'success' : 'info'
-    );
+  const respondToRequest = async (requestId: string, status: 'accepted' | 'declined'): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/requests', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, status })
+      });
+      const data = await res.json();
 
-    fetch('/api/requests', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requestId, status })
-    }).catch((err) => console.warn('Request status cloud persistence error:', err));
+      if (!res.ok || !data.success) {
+        showToast('Action Failed', 'error', data.error || 'Could not update request status.');
+        return false;
+      }
+
+      setRequests((prev) =>
+        prev.map((r) => (r.id === requestId ? { ...r, status } : r))
+      );
+      showToast(
+        status === 'accepted' ? 'Collaboration Accepted! 🎉' : 'Request declined',
+        status === 'accepted' ? 'success' : 'info'
+      );
+      return true;
+    } catch (err) {
+      showToast('Network Error', 'error', 'Could not update request on server.');
+      return false;
+    }
   };
 
-  const toggleEventRegistration = (eventId: string) => {
-    let nowRegistered = false;
-    let eventTitle = 'Campus Event';
+  const toggleEventRegistration = async (eventId: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/events/${eventId}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
 
-    setEvents((prev) =>
-      prev.map((e) => {
-        if (e.id === eventId) {
-          const isReg = !e.isRegistered;
-          nowRegistered = isReg;
-          eventTitle = e.title;
-          return {
-            ...e,
-            isRegistered: isReg,
-            attendeesCount: isReg ? e.attendeesCount + 1 : Math.max(0, e.attendeesCount - 1)
-          };
-        }
-        return e;
-      })
-    );
+      if (!res.ok || !data.success) {
+        showToast('RSVP Failed', 'error', data.error || 'Could not update event RSVP.');
+        return false;
+      }
 
-    showToast(
-      nowRegistered ? 'RSVP Confirmed! 🎟️' : 'RSVP Cancelled',
-      nowRegistered ? 'success' : 'info',
-      eventTitle
-    );
+      const isNowRegistered = Boolean(data.isRegistered);
+      setEvents((prev) =>
+        prev.map((e) => {
+          if (e.id === eventId) {
+            return {
+              ...e,
+              isRegistered: isNowRegistered,
+              attendeesCount: isNowRegistered ? e.attendeesCount + 1 : Math.max(0, e.attendeesCount - 1)
+            };
+          }
+          return e;
+        })
+      );
 
-    fetch(`/api/events/${eventId}/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id })
-    }).catch((err) => console.warn('Event RSVP cloud persistence error:', err));
+      showToast(
+        isNowRegistered ? 'RSVP Confirmed! 🎟️' : 'RSVP Cancelled',
+        isNowRegistered ? 'success' : 'info'
+      );
+      return true;
+    } catch (err) {
+      showToast('Network Error', 'error', 'Could not connect to event service.');
+      return false;
+    }
   };
 
   const runSmartMatch = (query: string) => {

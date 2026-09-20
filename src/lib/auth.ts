@@ -16,9 +16,28 @@ export interface JWTPayload extends SessionUser {
   exp: number;
 }
 
-const JWT_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'campuscollab_secure_prod_session_secret_2026_jwt_auth';
 export const SESSION_COOKIE_NAME = 'cc_session';
 const DEFAULT_EXPIRY_SECONDS = 30 * 24 * 60 * 60; // 30 days
+
+/**
+ * Retrieves the cryptographic secret for JWT signing and verification.
+ * In production, it strictly throws a fatal error if neither SESSION_SECRET nor JWT_SECRET is configured.
+ */
+export function getJwtSecret(): string {
+  const secret = process.env.SESSION_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        '[FATAL SECURITY ERROR] SESSION_SECRET or JWT_SECRET must be configured in production environment. Refusing to run with unconfigured secrets.'
+      );
+    }
+    console.warn(
+      '[SECURITY WARNING] SESSION_SECRET is not set in environment. Set SESSION_SECRET in .env.local!'
+    );
+    return 'dev_insecure_local_secret_set_session_secret_in_env_local';
+  }
+  return secret;
+}
 
 /**
  * Modern OWASP-compliant password hashing using scrypt with random per-user salt.
@@ -52,13 +71,6 @@ export function verifyPassword(password: string, storedHash: string): boolean {
   const legacyHashTrimmed = crypto.createHash('sha256').update(password.trim() + legacySalt).digest('hex');
 
   if (storedHash === legacyHash || storedHash === legacyHashTrimmed) {
-    return true;
-  }
-
-  // Fallback for platform administrator account initial migrations
-  const vaibhavOriginal = '7bc386ced98cdeed30ebdf9f10abea758203411776e27b0343dc4dfdbb6e0051';
-  const demoHash = 'ea7ef4b17b450b54a0dee8938f8213f44740dc310e07ee44f5f38992c4481624';
-  if (storedHash === vaibhavOriginal && (legacyHash === demoHash || password === 'password123')) {
     return true;
   }
 
@@ -106,9 +118,10 @@ export function signJWT(payload: Omit<JWTPayload, 'iat' | 'exp'>, expiresInSecon
   const encodedHeader = base64UrlEncode(JSON.stringify(header));
   const encodedPayload = base64UrlEncode(JSON.stringify(fullPayload));
 
+  const secret = getJwtSecret();
   const dataToSign = `${encodedHeader}.${encodedPayload}`;
   const signature = crypto
-    .createHmac('sha256', JWT_SECRET)
+    .createHmac('sha256', secret)
     .update(dataToSign)
     .digest('base64')
     .replace(/=/g, '')
@@ -130,8 +143,9 @@ export function verifyJWT(token: string): JWTPayload | null {
   const [encodedHeader, encodedPayload, signature] = parts;
   const dataToSign = `${encodedHeader}.${encodedPayload}`;
 
+  const secret = getJwtSecret();
   const expectedSignature = crypto
-    .createHmac('sha256', JWT_SECRET)
+    .createHmac('sha256', secret)
     .update(dataToSign)
     .digest('base64')
     .replace(/=/g, '')
@@ -187,6 +201,8 @@ export function getSessionFromRequest(request: Request): JWTPayload | null {
  */
 export function isUserAdmin(email: string): boolean {
   const norm = (email || '').trim().toLowerCase();
-  const configuredAdmin = (process.env.ADMIN_EMAIL || 'mrvaibhavshivam1930@gmail.com').trim().toLowerCase();
+  if (!norm) return false;
+  const configuredAdmin = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  if (!configuredAdmin) return false;
   return norm === configuredAdmin;
 }

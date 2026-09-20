@@ -33,44 +33,31 @@ export async function POST(request: Request) {
     let student = await findStudentByEmail(normalizedEmail);
     const authRecord = await getUserAuth(normalizedEmail);
 
-    if (!student && !authRecord) {
+    if (!authRecord || !authRecord.passwordHash) {
       return NextResponse.json(
-        { success: false, error: 'No account found with this email address.' },
-        { status: 404 }
+        { success: false, error: 'Invalid email or password.' },
+        { status: 401 }
       );
     }
 
-    // 2. Verify password with scrypt + legacy SHA-256 fallback
-    let isMatch = false;
-
-    if (authRecord && authRecord.passwordHash) {
-      isMatch = verifyPassword(password, authRecord.passwordHash);
-
-      // Upgrade legacy SHA-256 to modern scrypt on successful login
-      if (isMatch && needsPasswordRehash(authRecord.passwordHash)) {
-        try {
-          const modernHash = hashPassword(password);
-          await updateUserPassword(normalizedEmail, modernHash);
-        } catch (rehashErr) {
-          console.warn('[Auth] Failed to auto-upgrade password hash to scrypt:', rehashErr);
-        }
-      }
-    } else if (student) {
-      // Legacy demo student accounts
-      isMatch = password === 'password123' || password.trim() === 'password123' || password.length >= 6;
-      if (isMatch) {
-        // Automatically create scrypt auth record
-        try {
-          await updateUserPassword(normalizedEmail, hashPassword(password));
-        } catch {}
-      }
-    }
+    // 2. Verify password with scrypt + legacy SHA-256 fallback (no password bypass)
+    const isMatch = verifyPassword(password, authRecord.passwordHash);
 
     if (!isMatch) {
       return NextResponse.json(
-        { success: false, error: 'Incorrect password. Please try again.' },
+        { success: false, error: 'Invalid email or password.' },
         { status: 401 }
       );
+    }
+
+    // Upgrade legacy SHA-256 to modern scrypt on successful login
+    if (needsPasswordRehash(authRecord.passwordHash)) {
+      try {
+        const modernHash = hashPassword(password);
+        await updateUserPassword(normalizedEmail, modernHash);
+      } catch (rehashErr) {
+        console.warn('[Auth] Failed to auto-upgrade password hash to scrypt:', rehashErr);
+      }
     }
 
     // 3. If student profile is missing from disk/scan but auth record exists, restore it!

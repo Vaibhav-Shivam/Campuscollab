@@ -47,36 +47,44 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await getSessionFromRequest(request);
-    const body = await request.json();
-
-    if (!body.title || !body.description) {
+    const session = getSessionFromRequest(request);
+    if (!session || !session.userId) {
       return NextResponse.json({
         success: false,
-        error: 'Title and description are required'
+        error: 'Authentication required to post a project.'
+      }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    if (!body.title || !body.description || typeof body.title !== 'string' || typeof body.description !== 'string') {
+      return NextResponse.json({
+        success: false,
+        error: 'Valid title and description are required'
       }, { status: 400 });
     }
 
-    // Server-verified identity: use authenticated session when available
-    const ownerId = session?.userId || body.ownerId || 'student-1789820112921';
-    const ownerName = session?.name || body.ownerName || 'Project Lead';
-    const ownerCollege = session?.college || body.ownerCollege || 'College Campus';
+    // Server-verified identity: use authenticated session strictly
+    const ownerId = session.userId;
+    const ownerName = session.name || 'Project Lead';
+    const ownerCollege = session.college || 'Campus';
+    const ownerAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(ownerId)}`;
 
     const newProject: Project = {
-      id: body.id || `project-${Date.now()}`,
-      title: body.title,
-      tagline: body.tagline || body.title,
-      description: body.description,
+      id: body.id || `project-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      title: body.title.trim(),
+      tagline: (body.tagline || body.title).trim(),
+      description: body.description.trim(),
       type: body.type || 'Hackathon',
       ownerId,
       ownerName,
-      ownerAvatar: body.ownerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+      ownerAvatar: body.ownerAvatar || ownerAvatar,
       ownerCollege,
-      createdAt: 'Just now',
+      createdAt: new Date().toISOString(),
       requiredSkills: Array.isArray(body.requiredSkills) ? body.requiredSkills : [],
-      currentMembers: body.currentMembers || 1,
-      maxMembers: body.maxMembers || 4,
-      isOpen: body.isOpen !== undefined ? body.isOpen : true,
+      currentMembers: Math.max(1, Number(body.currentMembers) || 1),
+      maxMembers: Math.max(1, Number(body.maxMembers) || 4),
+      isOpen: body.isOpen !== undefined ? Boolean(body.isOpen) : true,
       likesCount: 0,
       comments: [],
       tags: Array.isArray(body.tags) ? body.tags : []

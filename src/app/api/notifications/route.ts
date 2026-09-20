@@ -6,19 +6,19 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const session = await getSessionFromRequest(request);
+    const session = getSessionFromRequest(request);
+    if (!session || !session.userId) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required to view notifications' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const queryUserId = searchParams.get('userId');
 
-    const targetUserId = session?.userId || queryUserId;
-
-    if (!targetUserId) {
-      return NextResponse.json({
-        success: true,
-        count: 0,
-        notifications: []
-      });
-    }
+    // Only admin can view other users' notifications
+    const targetUserId = (session.role === 'admin' && queryUserId) ? queryUserId : session.userId;
 
     const notifications = await getNotificationsFromDB(targetUserId);
 
@@ -37,7 +37,14 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const session = await getSessionFromRequest(request);
+    const session = getSessionFromRequest(request);
+    if (!session || !session.userId) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { notificationId } = body;
 
@@ -48,14 +55,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const userId = session?.userId || body.userId;
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User identity required' },
-        { status: 401 }
-      );
-    }
-
+    const userId = session.userId;
     await markNotificationReadInDB(notificationId, userId);
 
     return NextResponse.json({
