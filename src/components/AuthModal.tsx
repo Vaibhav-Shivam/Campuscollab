@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { X, LogIn, UserPlus, Sparkles, AlertCircle, ShieldCheck, KeyRound, CheckCircle2 } from 'lucide-react';
+import { X, LogIn, UserPlus, Sparkles, AlertCircle, ShieldCheck, KeyRound, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -17,15 +17,19 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [adminPasskey, setAdminPasskey] = useState('');
+  const [showAdminPasskey, setShowAdminPasskey] = useState(false);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Reset password state
   const [resetEmail, setResetEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,6 +43,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
   const [name, setName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [college, setCollege] = useState('');
   const [major, setMajor] = useState('Computer Science');
   const [primaryRole, setPrimaryRole] = useState('Full-Stack Developer');
@@ -331,14 +336,24 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
                   Forgot Password?
                 </button>
               </div>
-              <input
-                type="password"
-                required
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
-              />
+              <div className="relative">
+                <input
+                  type={showLoginPassword ? 'text' : 'password'}
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-4 pr-11 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-black transition-colors cursor-pointer"
+                  aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button
@@ -389,15 +404,25 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
                 <label className="block text-xs font-black uppercase tracking-wider mb-1">
                   Password (min 6 chars) *
                 </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={signupPassword}
-                  onChange={(e) => setSignupPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2 bg-white border-2 border-black rounded-xl text-xs font-medium placeholder:text-neutral-400 focus:outline-hidden shadow-[2px_2px_0px_0px_#000]"
-                />
+                <div className="relative">
+                  <input
+                    type={showSignupPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-3.5 pr-10 py-2 bg-white border-2 border-black rounded-xl text-xs font-medium placeholder:text-neutral-400 focus:outline-hidden shadow-[2px_2px_0px_0px_#000]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignupPassword(!showSignupPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-neutral-500 hover:text-black transition-colors cursor-pointer"
+                    aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showSignupPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -494,30 +519,50 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
               <label className="block text-xs font-black uppercase tracking-wider mb-1">
                 New Password (min 6 characters)
               </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-4 pr-11 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-black transition-colors cursor-pointer"
+                  aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-black uppercase tracking-wider mb-1">
                 Confirm New Password
               </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-4 pr-11 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-black transition-colors cursor-pointer"
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button
@@ -543,14 +588,24 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
               <label className="block text-xs font-black uppercase tracking-wider mb-1">
                 Admin Passkey
               </label>
-              <input
-                type="password"
-                required
-                value={adminPasskey}
-                onChange={(e) => setAdminPasskey(e.target.value)}
-                placeholder="Enter secret admin passkey..."
-                className="w-full px-4 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
-              />
+              <div className="relative">
+                <input
+                  type={showAdminPasskey ? 'text' : 'password'}
+                  required
+                  value={adminPasskey}
+                  onChange={(e) => setAdminPasskey(e.target.value)}
+                  placeholder="Enter secret admin passkey..."
+                  className="w-full pl-4 pr-11 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#FFDE59] shadow-[2.5px_2.5px_0px_0px_#000]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPasskey(!showAdminPasskey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-black transition-colors cursor-pointer"
+                  aria-label={showAdminPasskey ? 'Hide passkey' : 'Show passkey'}
+                >
+                  {showAdminPasskey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button

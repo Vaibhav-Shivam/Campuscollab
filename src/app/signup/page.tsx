@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { UserPlus, ArrowLeft, ShieldCheck, AlertCircle } from 'lucide-react';
+import { UserPlus, ArrowLeft, ShieldCheck, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -12,6 +12,7 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [college, setCollege] = useState('');
   const [major, setMajor] = useState('Computer Science');
   const [year, setYear] = useState('1st Year');
@@ -121,15 +122,25 @@ export default function SignupPage() {
               <label className="block text-xs font-black uppercase tracking-wider mb-1">
                 Password (min 6 chars) *
               </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-hidden shadow-[2px_2px_0px_0px_#000]"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-3.5 pr-11 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-hidden shadow-[2px_2px_0px_0px_#000]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-black transition-colors cursor-pointer"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div>

