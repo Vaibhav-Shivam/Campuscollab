@@ -152,7 +152,7 @@ export default function ExploreStudentsPage() {
         </div>
 
         {/* Neo-Brutalist Search & Filter Controls */}
-        <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 shadow-[5px_5px_0px_0px_#000] space-y-5">
+        <div className="bg-white border-[2.5px] border-black rounded-2xl p-4 sm:p-6 shadow-[5px_5px_0px_0px_#000] space-y-5">
           {/* Main Search Input */}
           <div className="relative">
             <Search className="w-5 h-5 text-black absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />

@@ -209,22 +209,22 @@ export default function AvatarPicker({
       </div>
 
       {/* Main Tab Navigation */}
-      <div className="flex border-b-2 border-black gap-2">
+      <div className="flex border-b-2 border-black gap-1.5 sm:gap-2 overflow-x-auto pb-0">
         <button
           type="button"
           onClick={() => setActiveTab('presets')}
-          className={`px-4 py-2.5 font-black text-xs uppercase tracking-wider transition-all border-t-2 border-x-2 border-black rounded-t-xl cursor-pointer ${
+          className={`px-3 sm:px-4 py-2 sm:py-2.5 font-black text-xs uppercase tracking-wider transition-all border-t-2 border-x-2 border-black rounded-t-xl cursor-pointer whitespace-nowrap ${
             activeTab === 'presets'
               ? 'bg-[#4FD1C5] text-black shadow-[0_-2px_0px_0px_#000]'
               : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
           }`}
         >
-          🎨 Choose Graphic ({AVATAR_GRAPHICS.length})
+          🎨 Graphics ({AVATAR_GRAPHICS.length})
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('upload')}
-          className={`px-4 py-2.5 font-black text-xs uppercase tracking-wider transition-all border-t-2 border-x-2 border-black rounded-t-xl cursor-pointer ${
+          className={`px-3 sm:px-4 py-2 sm:py-2.5 font-black text-xs uppercase tracking-wider transition-all border-t-2 border-x-2 border-black rounded-t-xl cursor-pointer whitespace-nowrap ${
             activeTab === 'upload'
               ? 'bg-[#FF70A6] text-black shadow-[0_-2px_0px_0px_#000]'
               : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
@@ -235,7 +235,7 @@ export default function AvatarPicker({
         <button
           type="button"
           onClick={() => setActiveTab('generate')}
-          className={`px-4 py-2.5 font-black text-xs uppercase tracking-wider transition-all border-t-2 border-x-2 border-black rounded-t-xl cursor-pointer ${
+          className={`px-3 sm:px-4 py-2 sm:py-2.5 font-black text-xs uppercase tracking-wider transition-all border-t-2 border-x-2 border-black rounded-t-xl cursor-pointer whitespace-nowrap ${
             activeTab === 'generate'
               ? 'bg-[#9B87F5] text-black shadow-[0_-2px_0px_0px_#000]'
               : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
@@ -460,8 +460,8 @@ export default function AvatarPicker({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-[#FAF8F5] border-3 border-black shadow-[8px_8px_0px_0px_#000] rounded-3xl p-6 sm:p-8 my-8 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-[#FAF8F5] border-3 border-black shadow-[5px_5px_0px_0px_#000] sm:shadow-[8px_8px_0px_0px_#000] rounded-2xl sm:rounded-3xl p-4 sm:p-8 my-4 sm:my-8 max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 mb-4 border-b-2 border-black">
           <div className="flex items-center gap-2">

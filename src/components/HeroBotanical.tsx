@@ -6,7 +6,7 @@ import { ArrowRight, Sparkles, Users, Briefcase, CheckCircle, ShieldCheck, Arrow
 
 export default function HeroBotanical() {
   return (
-    <section className="relative bg-[#FAF8F5] text-black overflow-hidden pt-12 pb-16 md:py-20 border-b-[2.5px] border-black">
+    <section className="relative bg-[#FAF8F5] text-black overflow-hidden pt-8 sm:pt-14 pb-12 sm:pb-20 border-b-[2.5px] border-black">
       {/* Subtle retro dot background grid */}
       <div className="absolute inset-0 opacity-40 pointer-events-none neo-dot-bg"></div>
 
@@ -28,19 +28,19 @@ export default function HeroBotanical() {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 items-center">
           {/* Left Column: Giant Headlines & CTAs */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className="lg:col-span-7 space-y-5 sm:space-y-6">
             {/* Top Pill Sticker */}
-            <div className="inline-flex items-center gap-2 bg-[#FFDE59] border-2 border-black px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow-[2.5px_2.5px_0px_0px_#000]">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#FFDE59] border-2 border-black px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] sm:shadow-[2.5px_2.5px_0px_0px_#000]">
               <span>★</span>
               <span>CAMPUS TALENT & PROJECT MATCHING</span>
             </div>
 
             {/* Giant Headline (Matching Image 2: "GO FROM 0 TO $1") */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight uppercase leading-[0.98]">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black tracking-tight uppercase leading-[1.05] sm:leading-[0.98]">
               GO FROM IDEA <br />
-              <span className="bg-[#FF70A6] px-2 py-0.5 border-2 border-black shadow-[4px_4px_0px_0px_#000] inline-block mt-2 rotate-[-1deg]">
+              <span className="bg-[#FF70A6] px-2 py-0.5 border-2 border-black shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] inline-block mt-1.5 sm:mt-2 rotate-[-1deg]">
                 TO REALITY.
               </span> <br />
               <span className="text-black inline-block mt-1">
@@ -49,16 +49,16 @@ export default function HeroBotanical() {
             </h1>
 
             {/* Supporting Copy */}
-            <p className="text-base sm:text-lg text-stone-800 font-medium leading-relaxed max-w-xl">
+            <p className="text-sm sm:text-lg text-stone-800 font-medium leading-relaxed max-w-xl">
               Anyone with an idea can build it on campus. Connect with skilled designers, backend developers, and video creators ready to collaborate right now.
             </p>
 
             {/* Search/Explore Bar matching Gumroad input */}
-            <div className="pt-2 max-w-lg">
-              <div className="flex flex-col sm:flex-row gap-3">
+            <div className="pt-1 sm:pt-2 max-w-lg">
+              <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
                 <Link
                   href="/match"
-                  className="bg-black hover:bg-[#FFDE59] hover:text-black text-white font-black text-sm uppercase tracking-wider px-7 py-3.5 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="bg-black hover:bg-[#FFDE59] hover:text-black text-white font-black text-xs sm:text-sm uppercase tracking-wider px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <span>Find Teammates AI</span>
                   <ArrowUpRight className="w-4 h-4" />
@@ -66,7 +66,7 @@ export default function HeroBotanical() {
 
                 <Link
                   href="/students"
-                  className="bg-[#FFDE59] hover:bg-[#ffe780] text-black font-black text-sm uppercase tracking-wider px-6 py-3.5 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer text-center"
+                  className="bg-[#FFDE59] hover:bg-[#ffe780] text-black font-black text-xs sm:text-sm uppercase tracking-wider px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer text-center"
                 >
                   Explore Students
                 </Link>
@@ -74,16 +74,16 @@ export default function HeroBotanical() {
             </div>
 
             {/* Neo-brutalist feature badges */}
-            <div className="flex flex-wrap items-center gap-3 pt-3 text-xs font-bold uppercase">
-              <span className="inline-flex items-center gap-1.5 bg-white border-2 border-black px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000]">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-2 sm:pt-3 text-[11px] sm:text-xs font-bold uppercase">
+              <span className="inline-flex items-center gap-1.5 bg-white border-2 border-black px-2.5 sm:px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000]">
                 <CheckCircle className="w-3.5 h-3.5 text-black" />
                 <span>Verified Code Proofs</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 bg-white border-2 border-black px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000]">
+              <span className="inline-flex items-center gap-1.5 bg-white border-2 border-black px-2.5 sm:px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000]">
                 <ShieldCheck className="w-3.5 h-3.5 text-black" />
                 <span>Privacy-First Requests</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 bg-[#4FD1C5] border-2 border-black px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000]">
+              <span className="inline-flex items-center gap-1.5 bg-[#4FD1C5] border-2 border-black px-2.5 sm:px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000]">
                 <Users className="w-3.5 h-3.5 text-black" />
                 <span>Active Campuses</span>
               </span>

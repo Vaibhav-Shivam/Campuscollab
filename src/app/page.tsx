@@ -104,7 +104,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             {/* Left Card: Looking for Teammates */}
-            <div className="bg-[#FF6B6B] border-[2.5px] border-black rounded-2xl p-8 shadow-[6px_6px_0px_0px_#000] space-y-4">
+            <div className="bg-[#FF6B6B] border-[2.5px] border-black rounded-2xl p-6 sm:p-8 shadow-[6px_6px_0px_0px_#000] space-y-4">
               <div className="inline-flex items-center gap-2 bg-black text-white px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#FFF]">
                 <span>🟠</span>
                 <span>I Am Looking for Teammates</span>
@@ -125,7 +125,7 @@ export default function HomePage() {
             </div>
 
             {/* Right Card: Available for Projects */}
-            <div className="bg-[#4FD1C5] border-[2.5px] border-black rounded-2xl p-8 shadow-[6px_6px_0px_0px_#000] space-y-4">
+            <div className="bg-[#4FD1C5] border-[2.5px] border-black rounded-2xl p-6 sm:p-8 shadow-[6px_6px_0px_0px_#000] space-y-4">
               <div className="inline-flex items-center gap-2 bg-black text-white px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#FFF]">
                 <span>🟢</span>
                 <span>I Am Available for Projects</span>

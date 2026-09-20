@@ -138,9 +138,9 @@ export default function StudentDashboardPage() {
     <div className="min-h-screen bg-[#FAF8F5] py-10 md:py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Welcome Header Card */}
-        <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 sm:p-10 shadow-[6px_6px_0px_0px_#000] relative overflow-hidden">
+        <div className="bg-white border-[2.5px] border-black rounded-2xl p-5 sm:p-10 shadow-[6px_6px_0px_0px_#000] relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-3.5 sm:gap-5">
               <div className="relative group">
                 <img
                   src={currentUser.avatar}

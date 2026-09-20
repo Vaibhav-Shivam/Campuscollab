@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { PlusCircle, Bell, ChevronDown, Menu, X, UserCheck, ArrowUpRight, LogIn, UserPlus, LogOut, Shield } from 'lucide-react';
+import { PlusCircle, Bell, ChevronDown, Menu, X, ArrowUpRight, LogIn, UserPlus, LogOut, Shield } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
 export default function Navbar() {
@@ -38,27 +38,27 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-[#FAF8F5] border-b-[2.5px] border-black shadow-[0_2px_0px_0px_#000]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18">
+        <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Brand Logo (Neo-Brutalist Gumroad Style) */}
-          <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
-            <div className="w-10 h-10 rounded-xl bg-[#FFDE59] border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] flex items-center justify-center font-black text-black text-xl group-hover:rotate-6 transition-transform">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 group cursor-pointer shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#FFDE59] border-2 border-black shadow-[2px_2px_0px_0px_#000] sm:shadow-[2.5px_2.5px_0px_0px_#000] flex items-center justify-center font-black text-black text-lg sm:text-xl group-hover:rotate-6 transition-transform">
               ★
             </div>
             <div>
-              <div className="text-xl font-black tracking-tight text-black flex items-center gap-1.5 uppercase">
+              <div className="text-lg sm:text-xl font-black tracking-tight text-black flex items-center gap-1.5 uppercase">
                 CampusCollab
-                <span className="text-[10px] uppercase font-black tracking-wider bg-black text-[#FFDE59] px-2 py-0.5 rounded-md">
+                <span className="text-[9px] sm:text-[10px] uppercase font-black tracking-wider bg-black text-[#FFDE59] px-1.5 sm:px-2 py-0.5 rounded-md">
                   Pro
                 </span>
               </div>
-              <div className="text-[11px] font-bold text-stone-600 -mt-0.5 hidden sm:block">
+              <div className="text-[10px] sm:text-[11px] font-bold text-stone-600 -mt-0.5 hidden sm:block">
                 Find People · Build Projects
               </div>
             </div>
           </Link>
 
-          {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center space-x-1.5">
+          {/* Desktop Nav Links (Cleanly spaced on lg+) */}
+          <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2.5 mx-4">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -67,11 +67,11 @@ export default function Navbar() {
                   href={link.href}
                   target={link.targetBlank ? '_blank' : undefined}
                   rel={link.targetBlank ? 'noopener noreferrer' : undefined}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-120 flex items-center gap-1 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-120 flex items-center gap-1 cursor-pointer whitespace-nowrap ${
                     link.name === 'Deck ↗'
-                      ? 'bg-[#9B87F5] text-black border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:bg-[#8570e6]'
+                      ? 'bg-[#9B87F5] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#8570e6]'
                       : isActive
-                      ? 'bg-[#FFDE59] text-black border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000]'
+                      ? 'bg-[#FFDE59] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
                       : 'text-black hover:bg-white hover:border-2 hover:border-black hover:shadow-[2px_2px_0px_0px_#000]'
                   }`}
                 >
@@ -84,12 +84,12 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Right Action Area */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Quick Action: Post Project */}
+          {/* Right Action Area - Cleanly spaced on all viewports */}
+          <div className="flex items-center gap-2 sm:gap-3 lg:gap-3.5 shrink-0">
+            {/* Quick Action: Post Project (hidden on small phones to keep header uncluttered) */}
             <Link
               href="/projects?new=true"
-              className="hidden sm:inline-flex items-center gap-1.5 bg-[#FF70A6] hover:bg-[#ff85b3] text-black font-black text-xs uppercase tracking-wider px-3.5 py-2 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+              className="hidden md:inline-flex items-center gap-1.5 bg-[#FF70A6] hover:bg-[#ff85b3] text-black font-black text-xs uppercase tracking-wider px-3.5 py-2 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3.5px_3.5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer whitespace-nowrap"
             >
               <PlusCircle className="w-4 h-4 text-black" />
               <span>Post Project</span>
@@ -101,12 +101,12 @@ export default function Navbar() {
                 {/* Requests Notification Badge */}
                 <Link
                   href="/dashboard#requests"
-                  className="relative p-2 rounded-xl bg-white border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:bg-[#FFDE59] transition-all cursor-pointer"
+                  className="relative p-2 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#FFDE59] transition-all cursor-pointer flex items-center justify-center"
                   title="Collaboration Requests"
                 >
                   <Bell className="w-4 h-4 text-black" />
                   {pendingRequests.length > 0 && (
-                    <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#FF6B6B] border-1.5 border-black text-[10px] font-black text-black shadow-[1px_1px_0px_0px_#000]">
+                    <span className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#FF6B6B] border-1.5 border-black text-[9px] font-black text-black shadow-[1px_1px_0px_0px_#000]">
                       {pendingRequests.length}
                     </span>
                   )}
@@ -116,16 +116,16 @@ export default function Navbar() {
                 <div className="relative">
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center gap-2 p-1.5 pr-2.5 rounded-xl bg-white border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:bg-stone-50 transition-all cursor-pointer"
+                    className="flex items-center gap-2 p-1.5 sm:pr-2.5 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-stone-50 transition-all cursor-pointer"
                     title="User account & profile"
                   >
                     <img
                       src={currentUser.avatar}
                       alt={currentUser.name}
-                      className="w-7 h-7 rounded-lg object-cover border border-black"
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-black bg-stone-100"
                     />
-                    <span className="text-xs font-black text-black hidden lg:inline-block max-w-[90px] truncate">
-                      {currentUser.name}
+                    <span className="text-xs font-black text-black hidden xl:inline-block max-w-[90px] truncate">
+                      {currentUser.name.split(' ')[0]}
                     </span>
                     {isAdmin && (
                       <span className="hidden sm:inline-flex text-[9px] font-black uppercase tracking-wider bg-[#FFDE59] text-black px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_0px_#000]">
@@ -160,7 +160,7 @@ export default function Navbar() {
                         <Link
                           href={`/students/${currentUser.id}`}
                           onClick={() => setUserMenuOpen(false)}
-                          className="block text-center text-xs text-black font-black py-1.5 rounded-lg bg-[#4FD1C5] border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#38E54D] cursor-pointer"
+                          className="block text-center text-xs text-black font-black py-2 rounded-xl bg-[#4FD1C5] border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#38E54D] cursor-pointer"
                         >
                           View Full Profile & Proofs →
                         </Link>
@@ -169,7 +169,7 @@ export default function Navbar() {
                           <Link
                             href="/admin"
                             onClick={() => setUserMenuOpen(false)}
-                            className="block text-center text-xs text-black font-black py-1.5 rounded-lg bg-[#FFDE59] border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ebcd4a] cursor-pointer"
+                            className="block text-center text-xs text-black font-black py-2 rounded-xl bg-[#FFDE59] border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ebcd4a] cursor-pointer"
                           >
                             👑 Admin Control Portal →
                           </Link>
@@ -181,7 +181,7 @@ export default function Navbar() {
                             logout();
                             setUserMenuOpen(false);
                           }}
-                          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-stone-100 hover:bg-[#FF6B6B] text-black text-xs font-bold border border-black transition-colors cursor-pointer"
+                          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-stone-100 hover:bg-[#FF6B6B] text-black text-xs font-black border-2 border-black transition-colors cursor-pointer"
                         >
                           <LogOut className="w-3.5 h-3.5" />
                           Log Out
@@ -192,15 +192,15 @@ export default function Navbar() {
                 </div>
               </>
             ) : (
-              /* Logged Out Actions */
-              <div className="flex items-center gap-2">
+              /* Logged Out Actions - Spacious on mobile */
+              <div className="flex items-center gap-2 sm:gap-2.5">
                 <button
                   type="button"
                   onClick={() => {
                     setAuthMode('login');
                     setAuthModalOpen(true);
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-white border-2 border-black text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] hover:bg-[#FFDE59] transition-all cursor-pointer flex items-center gap-1.5"
+                  className="hidden sm:inline-flex px-3.5 py-2 rounded-xl bg-white border-2 border-black text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] hover:bg-[#FFDE59] transition-all cursor-pointer items-center gap-1.5"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>Log In</span>
@@ -212,7 +212,7 @@ export default function Navbar() {
                     setAuthMode('signup');
                     setAuthModalOpen(true);
                   }}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#38E54D] border-2 border-black text-xs font-black uppercase tracking-wider shadow-[2.5px_2.5px_0px_0px_#000] hover:bg-[#2ed642] hover:-translate-y-0.5 transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-xl bg-[#38E54D] border-2 border-black text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] hover:bg-[#2ed642] hover:-translate-y-0.5 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>Sign Up</span>
@@ -220,51 +220,92 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Mobile Hamburger */}
+            {/* Mobile Hamburger Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] text-black cursor-pointer"
+              className="lg:hidden p-2 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] text-black hover:bg-[#FFDE59] transition-all cursor-pointer ml-1"
               aria-label="Toggle navigation menu"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 stroke-[2.5]" /> : <Menu className="w-5 h-5 stroke-[2.5]" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer (Responsive, beautiful Neo-Brutalist design) */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b-2 border-black px-4 pt-3 pb-5 space-y-2">
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3.5 py-2 rounded-xl text-sm font-black uppercase text-black hover:bg-[#FFDE59] border-2 border-transparent hover:border-black"
-            >
-              {link.name}
-            </Link>
-          ))}
+        <div className="lg:hidden bg-[#FAF8F5] border-b-[2.5px] border-black px-4 pt-4 pb-6 space-y-4 shadow-[0_4px_0px_0px_#000] animate-in slide-in-from-top-3 duration-150">
+          {/* If authenticated, show compact profile badge in drawer */}
+          {isAuthenticated && (
+            <div className="p-3.5 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  className="w-11 h-11 rounded-xl object-cover border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000] bg-stone-100"
+                />
+                <div>
+                  <div className="text-xs font-black uppercase text-black">{currentUser.name}</div>
+                  <div className="text-[11px] font-bold text-stone-500 truncate max-w-[170px]">{currentUser.college}</div>
+                </div>
+              </div>
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-[11px] font-black uppercase bg-[#FFDE59] px-2.5 py-1 rounded-lg border border-black shadow-[1px_1px_0px_0px_#000]"
+              >
+                Dashboard
+              </Link>
+            </div>
+          )}
 
-          <div className="pt-2 space-y-2 border-t border-stone-200">
+          {/* Navigation Links in Mobile Drawer */}
+          <div className="space-y-1.5">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  target={link.targetBlank ? '_blank' : undefined}
+                  rel={link.targetBlank ? 'noopener noreferrer' : undefined}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 ${
+                    isActive
+                      ? 'bg-[#FFDE59] text-black border-black shadow-[2.5px_2.5px_0px_0px_#000]'
+                      : 'bg-white text-black border-black/80 hover:bg-[#FF70A6]/20 shadow-[1.5px_1.5px_0px_0px_#000]'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    {link.highlight && <span className="text-[#9B87F5]">✦</span>}
+                    <span>{link.name}</span>
+                  </span>
+                  <span className="text-xs text-stone-400 font-bold">→</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Mobile Action Buttons */}
+          <div className="pt-2 space-y-2 border-t-2 border-black">
             <Link
               href="/projects?new=true"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full inline-flex justify-center items-center gap-2 bg-[#FF70A6] text-black font-black py-2.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] text-xs uppercase"
+              className="w-full inline-flex justify-center items-center gap-2 bg-[#FF70A6] text-black font-black py-3 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] text-xs uppercase tracking-wider cursor-pointer"
             >
               <PlusCircle className="w-4 h-4 text-black" />
               <span>Post New Project</span>
             </Link>
 
             {!isAuthenticated ? (
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
                 <button
                   onClick={() => {
                     setAuthMode('login');
                     setAuthModalOpen(true);
                     setMobileMenuOpen(false);
                   }}
-                  className="py-2.5 text-center text-xs font-black uppercase tracking-wider bg-white border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000]"
+                  className="py-3 text-center text-xs font-black uppercase tracking-wider bg-white border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] cursor-pointer"
                 >
                   Log In
                 </button>
@@ -274,21 +315,32 @@ export default function Navbar() {
                     setAuthModalOpen(true);
                     setMobileMenuOpen(false);
                   }}
-                  className="py-2.5 text-center text-xs font-black uppercase tracking-wider bg-[#38E54D] border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000]"
+                  className="py-3 text-center text-xs font-black uppercase tracking-wider bg-[#38E54D] border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] cursor-pointer"
                 >
                   Sign Up
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => {
-                  logout();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full py-2 text-center text-xs font-bold text-red-600 bg-red-50 border border-red-300 rounded-xl"
-              >
-                Sign Out ({currentUser.name})
-              </button>
+              <div className="space-y-2 pt-1">
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full inline-flex justify-center items-center gap-2 bg-[#FFDE59] text-black font-black py-2.5 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] text-xs uppercase"
+                  >
+                    <span>👑 Admin Control Portal</span>
+                  </Link>
+                )}
+                <button
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full py-2.5 text-center text-xs font-black uppercase text-red-700 bg-red-100 hover:bg-red-200 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] cursor-pointer"
+                >
+                  Log Out ({currentUser.name})
+                </button>
+              </div>
             )}
           </div>
         </div>
