@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fetchProjectsFromDB, saveProjectToDB } from '@/lib/db';
 import { Project } from '@/types';
+import { getSessionFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await getSessionFromRequest(request);
     const body = await request.json();
 
     if (!body.title || !body.description) {
@@ -55,16 +57,21 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    // Server-verified identity: use authenticated session when available
+    const ownerId = session?.userId || body.ownerId || 'student-1';
+    const ownerName = session?.name || body.ownerName || 'Project Lead';
+    const ownerCollege = session?.college || body.ownerCollege || 'College Campus';
+
     const newProject: Project = {
       id: body.id || `project-${Date.now()}`,
       title: body.title,
       tagline: body.tagline || body.title,
       description: body.description,
       type: body.type || 'Hackathon',
-      ownerId: body.ownerId || 'student-1',
-      ownerName: body.ownerName || 'Project Lead',
+      ownerId,
+      ownerName,
       ownerAvatar: body.ownerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
-      ownerCollege: body.ownerCollege || 'College Campus',
+      ownerCollege,
       createdAt: 'Just now',
       requiredSkills: Array.isArray(body.requiredSkills) ? body.requiredSkills : [],
       currentMembers: body.currentMembers || 1,

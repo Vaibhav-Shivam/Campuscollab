@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { fetchStudentsFromDB, saveStudentToDB } from '@/lib/db';
 import { Student } from '@/types';
+import { getSessionFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
+    const session = await getSessionFromRequest(request);
     const { searchParams } = new URL(request.url);
     const skill = searchParams.get('skill')?.toLowerCase();
     const status = searchParams.get('status');
@@ -46,11 +48,31 @@ export async function GET(request: Request) {
       results = results.filter((s) => (s.status || 'available').toLowerCase() === status.toLowerCase());
     }
 
+    // PRIVACY ENFORCEMENT: Redact student email on public endpoints
+    // Only disclose email to the student themselves or a platform admin
+    const sanitizedResults = results.map((s) => {
+      const isOwner =
+        session &&
+        (session.userId === s.id ||
+          (session.email && (s.email || '').toLowerCase() === session.email.toLowerCase()));
+      const isAdmin = session?.role === 'admin';
+
+      if (isOwner || isAdmin) {
+        return s;
+      }
+
+      // Redact private email address
+      return {
+        ...s,
+        email: undefined
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      count: results.length,
+      count: sanitizedResults.length,
       dataSource: source,
-      students: results
+      students: sanitizedResults
     }, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -68,6 +90,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await getSessionFromRequest(request);
     const body = await request.json();
     
     if (!body.name || !body.college || !body.primaryRole) {
@@ -77,8 +100,11 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    const studentId = session?.userId || body.id || `student-${Date.now()}`;
+    const studentEmail = session?.email || body.email || 'student@campuscollab.edu';
+
     const newStudent: Student = {
-      id: body.id || `student-${Date.now()}`,
+      id: studentId,
       name: body.name,
       avatar: body.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
       college: body.college,
@@ -91,7 +117,7 @@ export async function POST(request: Request) {
       skills: Array.isArray(body.skills) ? body.skills : [],
       projectCount: body.projectCount || 0,
       hackathonCount: body.hackathonCount || 0,
-      email: body.email || 'student@campuscollab.edu',
+      email: studentEmail,
       interests: Array.isArray(body.interests) ? body.interests : ['Tech'],
       proofs: Array.isArray(body.proofs) ? body.proofs : []
     };
@@ -113,6 +139,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const session = await getSessionFromRequest(request);
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -125,6 +152,21 @@ export async function PUT(request: Request) {
 
     const { students } = await fetchStudentsFromDB();
     const existing = students.find((s) => s.id === id);
+
+    // MUTATION AUTHORIZATION: Check session identity against target student
+    if (session) {
+      const isOwner =
+        session.userId === id ||
+        (session.email && existing?.email && session.email.toLowerCase() === existing.email.toLowerCase());
+      const isAdmin = session.role === 'admin';
+
+      if (!isOwner && !isAdmin) {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden: You can only modify your own profile' },
+          { status: 403 }
+        );
+      }
+    }
 
     const updatedStudent: Student = {
       ...(existing || {}),
@@ -147,4 +189,3 @@ export async function PUT(request: Request) {
     );
   }
 }
-

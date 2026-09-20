@@ -143,14 +143,21 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
     }
   };
 
-  const handleAdminSubmit = (e: React.FormEvent) => {
+  const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    const res = loginAsAdmin(adminPasskey);
-    if (res.success) {
-      onClose();
-    } else {
-      setErrorMessage(res.error || 'Invalid Admin Passkey.');
+    setLoading(true);
+    try {
+      const res = await loginAsAdmin(adminPasskey);
+      if (res.success) {
+        onClose();
+      } else {
+        setErrorMessage(res.error || 'Invalid Admin Passkey.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Error logging in as admin.');
+    } finally {
+      setLoading(false);
     }
   };
 

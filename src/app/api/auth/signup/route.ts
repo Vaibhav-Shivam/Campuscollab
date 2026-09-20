@@ -1,17 +1,23 @@
 import { NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { findStudentByEmail, saveStudentToDB, saveUserAuth } from '@/lib/db';
 import { Student } from '@/types';
 import { inferSkillCategory } from '@/lib/categorize';
+import { hashPassword, signJWT, SESSION_COOKIE_NAME, isUserAdmin } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password + 'campuscollab_salt_2026').digest('hex');
-}
-
 export async function POST(request: Request) {
   try {
+    const clientIp = getClientIp(request);
+    const rateCheck = checkRateLimit(`signup:${clientIp}`, 8, 60);
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        { success: false, error: `Too many registration attempts. Please wait ${rateCheck.resetSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { name, email, password, college, major, year, primaryRole, skills } = body;
 
@@ -37,8 +43,10 @@ export async function POST(request: Request) {
       );
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     // Check if email already registered
-    const existing = await findStudentByEmail(email);
+    const existing = await findStudentByEmail(normalizedEmail);
     if (existing) {
       return NextResponse.json(
         { success: false, error: 'An account with this email already exists. Please log in.' },
@@ -47,6 +55,7 @@ export async function POST(request: Request) {
     }
 
     const studentId = `student-${Date.now()}`;
+    // Modern scrypt salted password hash
     const passwordHash = hashPassword(password);
 
     // Format and intelligently categorize skills
@@ -65,7 +74,7 @@ export async function POST(request: Request) {
     const newStudent: Student = {
       id: studentId,
       name: name.trim(),
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name.trim())}`,
       college: college.trim(),
       year: year || '1st Year',
@@ -84,14 +93,39 @@ export async function POST(request: Request) {
     await saveStudentToDB(newStudent);
     await saveUserAuth(newStudent.email, passwordHash, studentId, newStudent);
 
-    const token = Buffer.from(`${studentId}:${Date.now()}`).toString('base64');
+    const isAdmin = isUserAdmin(newStudent.email);
+    const role = isAdmin ? 'admin' : 'student';
 
-    return NextResponse.json({
+    // Sign cryptographic HMAC-SHA256 JWT
+    const token = signJWT({
+      userId: studentId,
+      email: newStudent.email,
+      name: newStudent.name,
+      role,
+      college: newStudent.college
+    });
+
+    const response = NextResponse.json({
       success: true,
       message: 'Account created successfully!',
       user: newStudent,
-      token
+      token,
+      role,
+      isAdmin
     }, { status: 201 });
+
+    // Set secure HttpOnly cookie
+    response.cookies.set({
+      name: SESSION_COOKIE_NAME,
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60
+    });
+
+    return response;
   } catch (error) {
     console.error('[Auth Signup Error]', error);
     return NextResponse.json(

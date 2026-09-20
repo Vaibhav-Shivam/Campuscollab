@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { findStudentByEmail, getUserAuth, updateUserPassword } from '@/lib/db';
+import { hashPassword } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password + 'campuscollab_salt_2026').digest('hex');
-}
-
 export async function POST(request: Request) {
   try {
+    const clientIp = getClientIp(request);
+    const rateCheck = checkRateLimit(`reset-pwd:${clientIp}`, 5, 60);
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        { success: false, error: `Too many password reset attempts. Please wait ${rateCheck.resetSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { email, newPassword } = body;
 

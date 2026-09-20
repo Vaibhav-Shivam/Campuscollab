@@ -38,18 +38,22 @@ export default function AdminPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAdminAuth = (e: React.FormEvent) => {
+  const handleAdminAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setIsSubmitting(true);
 
-    const res = loginAsAdmin(passkey);
-    setIsSubmitting(false);
-
-    if (!res.success) {
-      setErrorMessage(res.error || 'Invalid administrator passkey.');
-    } else {
-      setPasskey('');
+    try {
+      const res = await loginAsAdmin(passkey);
+      if (!res.success) {
+        setErrorMessage(res.error || 'Invalid administrator passkey.');
+      } else {
+        setPasskey('');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Error verifying administrator passkey.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

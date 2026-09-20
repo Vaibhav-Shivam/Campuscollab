@@ -105,3 +105,26 @@ export interface AIMatchResult {
   missingSkills: string[];
   reasons: string[];
 }
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  type: 'collaboration_request' | 'request_accepted' | 'request_declined' | 'new_comment' | 'event_reminder' | 'system';
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  link?: string;
+}
+
+export interface Report {
+  id: string;
+  reporterId: string;
+  targetType: 'student' | 'project' | 'comment';
+  targetId: string;
+  reason: string;
+  details?: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  createdAt: string;
+}
+

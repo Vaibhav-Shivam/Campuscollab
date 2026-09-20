@@ -68,19 +68,23 @@ export default function LoginPage() {
     }
   };
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
     setLoading(true);
 
-    const res = loginAsAdmin(adminPasskey);
-    setLoading(false);
-
-    if (res.success) {
-      router.push('/dashboard');
-    } else {
-      setErrorMessage(res.error || 'Invalid Administrator Passkey.');
+    try {
+      const res = await loginAsAdmin(adminPasskey);
+      if (res.success) {
+        router.push('/dashboard');
+      } else {
+        setErrorMessage(res.error || 'Invalid Administrator Passkey.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Error authenticating administrator.');
+    } finally {
+      setLoading(false);
     }
   };
 

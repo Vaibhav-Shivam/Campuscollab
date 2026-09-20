@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { findStudentByEmail, getUserAuth, getStudentById, saveStudentToDB } from '@/lib/db';
+import { findStudentByEmail, getUserAuth, getStudentById, saveStudentToDB, updateUserPassword } from '@/lib/db';
 import { Student } from '@/types';
+import { verifyPassword, hashPassword, needsPasswordRehash, signJWT, SESSION_COOKIE_NAME, isUserAdmin } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password + 'campuscollab_salt_2026').digest('hex');
-}
-
 export async function POST(request: Request) {
   try {
+    const clientIp = getClientIp(request);
     const body = await request.json();
     const { email, password } = body;
 
@@ -23,6 +21,14 @@ export async function POST(request: Request) {
 
     const normalizedEmail = email.trim().toLowerCase();
 
+    const rateCheck = checkRateLimit(`login:${clientIp}:${normalizedEmail}`, 10, 60);
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        { success: false, error: `Too many login attempts. Please wait ${rateCheck.resetSeconds}s before trying again.` },
+        { status: 429 }
+      );
+    }
+
     // 1. Dual-check: Look up student profile AND auth record
     let student = await findStudentByEmail(normalizedEmail);
     const authRecord = await getUserAuth(normalizedEmail);
@@ -34,33 +40,30 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Verify password
-    const inputHash = hashPassword(password);
-    const trimmedInputHash = hashPassword(password.trim());
+    // 2. Verify password with scrypt + legacy SHA-256 fallback
     let isMatch = false;
 
     if (authRecord && authRecord.passwordHash) {
-      isMatch =
-        authRecord.passwordHash === inputHash ||
-        authRecord.passwordHash === trimmedInputHash;
+      isMatch = verifyPassword(password, authRecord.passwordHash);
 
-      // Ensure platform owner Vaibhav Shivam can always access with original password or password123
-      if (normalizedEmail === 'mrvaibhavshivam1930@gmail.com') {
-        const originalHash = '7bc386ced98cdeed30ebdf9f10abea758203411776e27b0343dc4dfdbb6e0051';
-        const demoHash = 'ea7ef4b17b450b54a0dee8938f8213f44740dc310e07ee44f5f38992c4481624';
-        if (
-          inputHash === originalHash ||
-          trimmedInputHash === originalHash ||
-          inputHash === demoHash ||
-          trimmedInputHash === demoHash ||
-          password.trim() === 'password123'
-        ) {
-          isMatch = true;
+      // Upgrade legacy SHA-256 to modern scrypt on successful login
+      if (isMatch && needsPasswordRehash(authRecord.passwordHash)) {
+        try {
+          const modernHash = hashPassword(password);
+          await updateUserPassword(normalizedEmail, modernHash);
+        } catch (rehashErr) {
+          console.warn('[Auth] Failed to auto-upgrade password hash to scrypt:', rehashErr);
         }
       }
     } else if (student) {
-      // If legacy or template account without password hash
+      // Legacy demo student accounts
       isMatch = password === 'password123' || password.trim() === 'password123' || password.length >= 6;
+      if (isMatch) {
+        // Automatically create scrypt auth record
+        try {
+          await updateUserPassword(normalizedEmail, hashPassword(password));
+        } catch {}
+      }
     }
 
     if (!isMatch) {
@@ -97,7 +100,6 @@ export async function POST(request: Request) {
           proofs: []
         };
       }
-      // Re-save to ensure it's restored across all storage tiers
       await saveStudentToDB(student);
     }
 
@@ -108,14 +110,39 @@ export async function POST(request: Request) {
       );
     }
 
-    const token = Buffer.from(`${student.id}:${Date.now()}`).toString('base64');
+    const isAdmin = isUserAdmin(student.email);
+    const role = isAdmin ? 'admin' : 'student';
 
-    return NextResponse.json({
+    // 4. Generate cryptographically signed HMAC-SHA256 JWT
+    const token = signJWT({
+      userId: student.id,
+      email: student.email,
+      name: student.name,
+      role,
+      college: student.college
+    });
+
+    const response = NextResponse.json({
       success: true,
       message: `Welcome back, ${student.name}!`,
       user: student,
-      token
+      token,
+      role,
+      isAdmin
     });
+
+    // 5. Set secure HttpOnly cookie
+    response.cookies.set({
+      name: SESSION_COOKIE_NAME,
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60
+    });
+
+    return response;
   } catch (error) {
     console.error('[Auth Login Error]', error);
     return NextResponse.json(

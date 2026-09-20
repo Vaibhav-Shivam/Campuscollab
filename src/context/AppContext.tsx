@@ -34,7 +34,7 @@ interface AppContextType {
   refreshStudents: () => Promise<void>;
   isRefreshingStudents: boolean;
   isAdmin: boolean;
-  loginAsAdmin: (passkey: string) => { success: boolean; error?: string };
+  loginAsAdmin: (passkey: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -46,8 +46,7 @@ const STORAGE_KEYS = {
   REQUESTS: 'campuscollab_requests_v2',
   CURRENT_USER_ID: 'campuscollab_current_user_id_v2',
   AUTH_TOKEN: 'campuscollab_auth_token_v2',
-  IS_ADMIN: 'campuscollab_is_admin_v1',
-  SAVED_CREDENTIALS: 'campuscollab_registered_credentials_v1'
+  IS_ADMIN: 'campuscollab_is_admin_v1'
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -143,6 +142,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Hydrate from localStorage on mount & sync with API
   useEffect(() => {
     try {
+      localStorage.removeItem('campuscollab_registered_credentials_v1'); // Purge legacy raw password cache
+
       const savedStudents = localStorage.getItem(STORAGE_KEYS.STUDENTS);
       const savedProjects = localStorage.getItem(STORAGE_KEYS.PROJECTS);
       const savedEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
@@ -163,16 +164,49 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     setIsHydrated(true);
 
-    // Background fetch from cloud API
+    // Sync authenticated session with server
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.session) {
+          setIsAuthenticated(true);
+          setIsAdmin(Boolean(data.isAdmin));
+          if (data.session.userId) {
+            setCurrentUserId(data.session.userId);
+          }
+          if (data.student) {
+            setStudents((prev) => [data.student, ...prev.filter((s) => s.id !== data.student.id)]);
+          }
+        }
+      })
+      .catch(() => {});
+
+    // Fetch projects from cloud API
     fetch('/api/projects')
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.projects) && data.projects.length > 0) {
-          setProjects((prev) => {
-            const existingIds = new Set(prev.map(p => p.id));
-            const fresh = data.projects.filter((p: Project) => !existingIds.has(p.id));
-            return [...fresh, ...prev];
-          });
+          setProjects(data.projects);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch events from cloud API
+    fetch('/api/events')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.events) && data.events.length > 0) {
+          setEvents(data.events);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch collaboration requests from cloud API
+    fetch('/api/requests')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.requests) && data.requests.length > 0) {
+          setRequests(data.requests);
         }
       })
       .catch(() => {});
@@ -199,55 +233,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      let res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: normalizedEmail, password })
       });
-      let data = await res.json();
-
-      // AUTO-HEALING RECOVERY:
-      // If server lost data (e.g. Render restart/ephemeral disk or cold start),
-      // check if this browser has the registered account and re-sync it to the server!
-      if (!res.ok && data.error && (data.error.includes('No account found with this email address') || res.status === 404)) {
-        try {
-          const credsRaw = localStorage.getItem(STORAGE_KEYS.SAVED_CREDENTIALS);
-          if (credsRaw) {
-            const list = JSON.parse(credsRaw);
-            const match = list.find((c: any) => c.email.toLowerCase() === normalizedEmail);
-            if (match && (match.formData || match.student)) {
-              // Automatically re-register / restore on server
-              const restorePayload = match.formData || {
-                name: match.student.name,
-                email: normalizedEmail,
-                password: match.password || password,
-                college: match.student.college,
-                major: match.student.major,
-                year: match.student.year,
-                primaryRole: match.student.primaryRole,
-                skills: match.student.skills,
-                bio: match.student.bio
-              };
-              const reReg = await fetch('/api/auth/signup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(restorePayload)
-              });
-              if (reReg.ok) {
-                // Retry login
-                res = await fetch('/api/auth/login', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ email: normalizedEmail, password })
-                });
-                data = await res.json();
-              }
-            }
-          }
-        } catch (recoverErr) {
-          console.warn('Auto account recovery failed:', recoverErr);
-        }
-      }
+      const data = await res.json();
 
       if (!res.ok || !data.success) {
         return { success: false, error: data.error || 'Authentication failed.' };
@@ -258,46 +249,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const updated = [loggedUser, ...prev.filter((s) => s.id !== loggedUser.id)];
         try {
           localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(updated));
-        } catch (e) {
-          console.warn('LocalStorage save error on login:', e);
-        }
+        } catch (e) {}
         return updated;
       });
 
       setCurrentUserId(loggedUser.id);
       setIsAuthenticated(true);
 
-      // Cache credentials on successful login
+      const isAdminEmail = Boolean(data.isAdmin || (loggedUser.email || '').toLowerCase() === 'mrvaibhavshivam1930@gmail.com');
+      setIsAdmin(isAdminEmail);
       try {
-        const existingRaw = localStorage.getItem(STORAGE_KEYS.SAVED_CREDENTIALS);
-        const list = existingRaw ? JSON.parse(existingRaw) : [];
-        const updated = [
-          {
-            email: normalizedEmail,
-            password,
-            student: loggedUser
-          },
-          ...list.filter((c: any) => c.email !== normalizedEmail)
-        ];
-        localStorage.setItem(STORAGE_KEYS.SAVED_CREDENTIALS, JSON.stringify(updated));
-      } catch (e) {}
-
-      const isAdminEmail = (loggedUser.email || '').toLowerCase() === 'mrvaibhavshivam1930@gmail.com';
-      if (isAdminEmail) {
-        setIsAdmin(true);
-        try {
+        if (isAdminEmail) {
           localStorage.setItem(STORAGE_KEYS.IS_ADMIN, 'true');
-        } catch (e) {}
-      } else {
-        setIsAdmin(false);
-        try {
+        } else {
           localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
-        } catch (e) {}
-      }
-
-      try {
+        }
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, loggedUser.id);
-        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token || 'demo-token');
+        if (data.token) {
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+        }
       } catch (e) {}
 
       showToast(`Welcome back, ${loggedUser.name}! 🎉`, 'success', isAdminEmail ? 'Logged in with Admin privileges.' : 'You are now signed in.');
@@ -325,36 +295,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const updated = [newUser, ...prev.filter((s) => s.id !== newUser.id)];
         try {
           localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(updated));
-        } catch (e) {
-          console.warn('LocalStorage save error on signup:', e);
-        }
+        } catch (e) {}
         return updated;
       });
 
-      // Save credentials in client local storage cache for auto-recovery
-      try {
-        const existingRaw = localStorage.getItem(STORAGE_KEYS.SAVED_CREDENTIALS);
-        const list = existingRaw ? JSON.parse(existingRaw) : [];
-        const norm = (newUser.email || formData.email).toLowerCase();
-        const updated = [
-          {
-            email: norm,
-            password: formData.password,
-            student: newUser,
-            formData
-          },
-          ...list.filter((c: any) => c.email !== norm)
-        ];
-        localStorage.setItem(STORAGE_KEYS.SAVED_CREDENTIALS, JSON.stringify(updated));
-      } catch (e) {}
-
       setCurrentUserId(newUser.id);
       setIsAuthenticated(true);
-      setIsAdmin(false);
+      setIsAdmin(Boolean(data.isAdmin));
       try {
-        localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
+        if (data.isAdmin) {
+          localStorage.setItem(STORAGE_KEYS.IS_ADMIN, 'true');
+        } else {
+          localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
+        }
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, newUser.id);
-        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token || 'demo-token');
+        if (data.token) {
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+        }
       } catch (e) {}
 
       showToast(`Welcome to CampusCollab, ${newUser.name}! 🚀`, 'success', 'Your student profile is live.');
@@ -378,27 +335,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: data.error || 'Password reset failed.' };
       }
 
-      // Update client local cache of saved credentials if available
-      try {
-        const existingRaw = localStorage.getItem(STORAGE_KEYS.SAVED_CREDENTIALS);
-        if (existingRaw) {
-          const list = JSON.parse(existingRaw);
-          const updated = list.map((c: any) => {
-            if (c.email && c.email.toLowerCase() === normalizedEmail) {
-              return {
-                ...c,
-                password: newPassword,
-                formData: c.formData ? { ...c.formData, password: newPassword } : undefined
-              };
-            }
-            return c;
-          });
-          localStorage.setItem(STORAGE_KEYS.SAVED_CREDENTIALS, JSON.stringify(updated));
-        }
-      } catch (e) {
-        console.warn('Failed to update saved credentials cache on reset:', e);
-      }
-
       showToast('Password Reset Successfully! 🔑', 'success', 'You can now sign in with your new password.');
       return { success: true, message: data.message };
     } catch (error: any) {
@@ -406,48 +342,57 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginAsAdmin = (passkey: string): { success: boolean; error?: string } => {
-    const trimmed = passkey.trim();
-    const validKeys = [
-      process.env.NEXT_PUBLIC_ADMIN_PASSKEY,
-      'admin2026',
-      'vaibhav2026',
-      'campuscollab@2026'
-    ].filter(Boolean);
+  const loginAsAdmin = async (passkey: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/auth/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passkey: passkey.trim() })
+      });
+      const data = await res.json();
 
-    if (validKeys.includes(trimmed)) {
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Invalid Administrator Passkey.' };
+      }
+
       setIsAdmin(true);
       setIsAuthenticated(true);
       try {
         localStorage.setItem(STORAGE_KEYS.IS_ADMIN, 'true');
-        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, 'admin-token');
+        if (data.token) {
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+        }
       } catch (e) {}
 
-      const adminStudent = students.find(
-        (s) => s.id === 'student-live-test' || s.name.toLowerCase().includes('vaibhav')
-      );
-      if (adminStudent) {
-        setCurrentUserId(adminStudent.id);
+      if (data.user) {
+        const adminUser: Student = data.user;
+        setStudents((prev) => [adminUser, ...prev.filter((s) => s.id !== adminUser.id)]);
+        setCurrentUserId(adminUser.id);
         try {
-          localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, adminStudent.id);
+          localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, adminUser.id);
         } catch (e) {}
       }
 
       showToast('Admin Access Granted 👑', 'success', 'Demo Persona Switcher is unlocked for you.');
       return { success: true };
-    } else {
-      return { success: false, error: 'Invalid Administrator Passkey.' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error connecting to admin auth service.' };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {}
     setIsAuthenticated(false);
     setIsAdmin(false);
     try {
       localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
       localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
+      localStorage.removeItem('campuscollab_registered_credentials_v1');
     } catch (e) {}
+    setCurrentUserId('student-1');
     showToast('Logged out safely', 'info', 'See you next time!');
   };
 
@@ -550,22 +495,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const addCommentToProject = (projectId: string, content: string, offeringSkills?: string[]) => {
     const newComment = {
-      id: `comment-${Date.now()}`,
+      id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       authorId: currentUser.id,
       authorName: currentUser.name,
       authorAvatar: currentUser.avatar,
       authorRole: currentUser.primaryRole,
-      content,
+      content: content.trim(),
       createdAt: 'Just now',
       offeringSkills: offeringSkills && offeringSkills.length > 0 ? offeringSkills : undefined
     };
 
     setProjects((prev) =>
       prev.map((p) =>
-        p.id === projectId ? { ...p, comments: [...p.comments, newComment] } : p
+        p.id === projectId ? { ...p, comments: [...(p.comments || []), newComment] } : p
       )
     );
     showToast('Comment posted! 💬', 'success');
+
+    fetch(`/api/projects/${projectId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: content.trim(),
+        offeringSkills,
+        authorId: currentUser.id,
+        authorName: currentUser.name,
+        authorAvatar: currentUser.avatar,
+        authorRole: currentUser.primaryRole
+      })
+    }).catch((err) => console.warn('Comment cloud persistence error:', err));
   };
 
   const sendCollaborationRequest = (
@@ -577,7 +535,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const targetProject = projects.find((p) => p.id === projectId);
 
     const newReq: CollaborationRequest = {
-      id: `req-${Date.now()}`,
+      id: `req-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       senderId: currentUser.id,
       senderName: currentUser.name,
       senderAvatar: currentUser.avatar,
@@ -586,7 +544,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       receiverName: targetStudent ? targetStudent.name : 'Teammate',
       projectId,
       projectTitle: targetProject ? targetProject.title : 'Project Collaboration',
-      message,
+      message: message.trim(),
       status: 'pending',
       createdAt: 'Just now',
       contactEmail: currentUser.email
@@ -594,6 +552,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setRequests((prev) => [newReq, ...prev]);
     showToast('Application Sent! 📬', 'success', `Request delivered to ${targetStudent?.name || 'project owner'}`);
+
+    fetch('/api/requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        receiverId,
+        projectId,
+        message: message.trim(),
+        contactEmail: currentUser.email
+      })
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.request) {
+          setRequests((prev) => [data.request, ...prev.filter((r) => r.id !== newReq.id)]);
+        }
+      })
+      .catch((err) => console.warn('Request cloud persistence error:', err));
+
     return newReq;
   };
 
@@ -605,6 +582,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       status === 'accepted' ? 'Collaboration Accepted! 🎉' : 'Request declined',
       status === 'accepted' ? 'success' : 'info'
     );
+
+    fetch('/api/requests', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestId, status })
+    }).catch((err) => console.warn('Request status cloud persistence error:', err));
   };
 
   const toggleEventRegistration = (eventId: string) => {
@@ -632,6 +615,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       nowRegistered ? 'success' : 'info',
       eventTitle
     );
+
+    fetch(`/api/events/${eventId}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id })
+    }).catch((err) => console.warn('Event RSVP cloud persistence error:', err));
   };
 
   const runSmartMatch = (query: string) => {

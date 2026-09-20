@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, ScanCommand, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
-import { initialStudents, initialProjects, initialCampusEvents } from '@/data/mockData';
-import { Student, Project, CampusEvent } from '@/types';
+import { DynamoDBDocumentClient, ScanCommand, PutCommand, GetCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { initialStudents, initialProjects, initialCampusEvents, initialRequests } from '@/data/mockData';
+import { Student, Project, CampusEvent, CollaborationRequest, ProjectComment, AppNotification, Report } from '@/types';
 import { inferSkillCategory } from '@/lib/categorize';
 
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'workshop-campuscollab-db';
@@ -19,6 +19,9 @@ const BACKUP_STUDENTS_FILE = path.join(BACKUP_DATA_DIR, 'registered_students.jso
 const PRIMARY_AUTH_FILE = path.join(PRIMARY_DATA_DIR, 'user_auth.json');
 const BACKUP_AUTH_FILE = path.join(BACKUP_DATA_DIR, 'user_auth.json');
 
+const PRIMARY_REQUESTS_FILE = path.join(PRIMARY_DATA_DIR, 'collaboration_requests.json');
+const BACKUP_REQUESTS_FILE = path.join(BACKUP_DATA_DIR, 'collaboration_requests.json');
+
 export interface LocalAuthRecord {
   email: string;
   passwordHash: string;
@@ -33,9 +36,17 @@ export interface LocalAuthRecord {
 const globalStore = global as unknown as {
   __cc_students?: Map<string, Student>;
   __cc_auth?: Map<string, LocalAuthRecord>;
+  __cc_projects?: Map<string, Project>;
+  __cc_requests?: Map<string, CollaborationRequest>;
+  __cc_notifications?: Map<string, AppNotification>;
+  __cc_reports?: Map<string, Report>;
 };
 if (!globalStore.__cc_students) globalStore.__cc_students = new Map();
 if (!globalStore.__cc_auth) globalStore.__cc_auth = new Map();
+if (!globalStore.__cc_projects) globalStore.__cc_projects = new Map();
+if (!globalStore.__cc_requests) globalStore.__cc_requests = new Map();
+if (!globalStore.__cc_notifications) globalStore.__cc_notifications = new Map();
+if (!globalStore.__cc_reports) globalStore.__cc_reports = new Map();
 
 function safeReadFile(filePath: string): string | null {
   try {
@@ -728,3 +739,481 @@ export async function updateUserPassword(email: string, newPasswordHash: string)
 
   return true;
 }
+
+function getLocalRequests(): CollaborationRequest[] {
+  const map = new Map<string, CollaborationRequest>();
+  if (globalStore.__cc_requests) {
+    for (const r of globalStore.__cc_requests.values()) {
+      map.set(r.id, r);
+    }
+  }
+
+  const files = [PRIMARY_REQUESTS_FILE, BACKUP_REQUESTS_FILE];
+  for (const f of files) {
+    const raw = safeReadFile(f);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const r of parsed) {
+            if (r && r.id) {
+              map.set(r.id, r);
+              if (globalStore.__cc_requests) {
+                globalStore.__cc_requests.set(r.id, r);
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+export async function saveCollaborationRequestToDB(req: CollaborationRequest): Promise<boolean> {
+  // 1. In-memory & local file cache
+  if (globalStore.__cc_requests) {
+    globalStore.__cc_requests.set(req.id, req);
+  }
+  const current = getLocalRequests();
+  const updated = [req, ...current.filter((r) => r.id !== req.id)];
+  const jsonStr = JSON.stringify(updated, null, 2);
+  safeWriteFile(PRIMARY_REQUESTS_FILE, jsonStr);
+  safeWriteFile(BACKUP_REQUESTS_FILE, jsonStr);
+
+  // 2. Direct DynamoDB write
+  const client = getDocClient();
+  if (client) {
+    try {
+      await client.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: {
+            pk: `REQ#${req.id}`,
+            sk: 'METADATA',
+            type: 'REQUEST',
+            ...req
+          }
+        })
+      );
+    } catch (err) {
+      console.warn('[DB] Failed to save request to DynamoDB:', err);
+    }
+  }
+
+  // 3. Dispatch in-app notification to receiver
+  if (req.receiverId) {
+    saveNotificationToDB({
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      userId: req.receiverId,
+      type: 'collaboration_request',
+      title: 'New Collaboration Request! 📬',
+      message: `${req.senderName} sent you a request for "${req.projectTitle}".`,
+      read: false,
+      createdAt: new Date().toISOString(),
+      link: '/requests'
+    }).catch(() => {});
+  }
+
+  return true;
+}
+
+export async function getCollaborationRequestsFromDB(userId?: string): Promise<CollaborationRequest[]> {
+  const client = getDocClient();
+  let dbRequests: CollaborationRequest[] = [];
+
+  if (client) {
+    try {
+      const command = new ScanCommand({
+        TableName: TABLE_NAME,
+        FilterExpression: 'begins_with(pk, :prefix)',
+        ExpressionAttributeValues: {
+          ':prefix': 'REQ#'
+        }
+      });
+      const res = await client.send(command);
+      if (res.Items && res.Items.length > 0) {
+        dbRequests = res.Items.map((item) => ({
+          id: item.id || item.pk.replace('REQ#', ''),
+          senderId: item.senderId,
+          senderName: item.senderName,
+          senderAvatar: item.senderAvatar,
+          senderRole: item.senderRole,
+          receiverId: item.receiverId,
+          receiverName: item.receiverName,
+          projectId: item.projectId,
+          projectTitle: item.projectTitle,
+          message: item.message,
+          status: item.status || 'pending',
+          createdAt: item.createdAt || 'Recent',
+          contactEmail: item.contactEmail
+        }));
+      }
+    } catch (err) {
+      console.warn('[DB] DynamoDB scan requests error, falling back:', err);
+    }
+  }
+
+  // Merge with local requests and initial mock data
+  const local = getLocalRequests();
+  const requestMap = new Map<string, CollaborationRequest>();
+  initialRequests.forEach((r) => requestMap.set(r.id, r));
+  local.forEach((r) => requestMap.set(r.id, r));
+  dbRequests.forEach((r) => requestMap.set(r.id, r));
+
+  let all = Array.from(requestMap.values());
+  if (userId) {
+    all = all.filter((r) => r.senderId === userId || r.receiverId === userId);
+  }
+  return all;
+}
+
+export async function updateCollaborationRequestStatusInDB(
+  requestId: string,
+  status: 'accepted' | 'declined'
+): Promise<boolean> {
+  // Update local
+  const current = getLocalRequests();
+  const updated = current.map((r) => (r.id === requestId ? { ...r, status } : r));
+  safeWriteFile(PRIMARY_REQUESTS_FILE, JSON.stringify(updated, null, 2));
+  safeWriteFile(BACKUP_REQUESTS_FILE, JSON.stringify(updated, null, 2));
+
+  if (globalStore.__cc_requests?.has(requestId)) {
+    const existing = globalStore.__cc_requests.get(requestId)!;
+    existing.status = status;
+  }
+
+  const client = getDocClient();
+  if (client) {
+    try {
+      await client.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            pk: `REQ#${requestId}`,
+            sk: 'METADATA'
+          },
+          UpdateExpression: 'SET #status = :s, respondedAt = :t',
+          ExpressionAttributeNames: {
+            '#status': 'status'
+          },
+          ExpressionAttributeValues: {
+            ':s': status,
+            ':t': new Date().toISOString()
+          }
+        })
+      );
+    } catch (err) {
+      console.warn('[DB] Error updating request in DynamoDB:', err);
+    }
+  }
+
+  // Dispatch in-app notification to the original sender
+  const targetReq = globalStore.__cc_requests?.get(requestId) || current.find((r) => r.id === requestId);
+  if (targetReq && targetReq.senderId) {
+    saveNotificationToDB({
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      userId: targetReq.senderId,
+      type: status === 'accepted' ? 'request_accepted' : 'request_declined',
+      title: status === 'accepted' ? 'Collaboration Accepted! 🎉' : 'Request Update',
+      message: `${targetReq.receiverName} ${status === 'accepted' ? 'accepted' : 'declined'} your collaboration request for "${targetReq.projectTitle}".`,
+      read: false,
+      createdAt: new Date().toISOString(),
+      link: '/requests'
+    }).catch(() => {});
+  }
+
+  return true;
+}
+
+export async function addProjectCommentToDB(projectId: string, comment: ProjectComment): Promise<boolean> {
+  const client = getDocClient();
+  if (client) {
+    try {
+      await client.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: {
+            pk: `PROJECT#${projectId}`,
+            sk: `COMMENT#${comment.id}`,
+            type: 'COMMENT',
+            projectId,
+            ...comment
+          }
+        })
+      );
+    } catch (err) {
+      console.warn('[DB] Error saving comment to DynamoDB:', err);
+    }
+  }
+
+  // Update in cached projects
+  if (globalStore.__cc_projects?.has(projectId)) {
+    const p = globalStore.__cc_projects.get(projectId)!;
+    p.comments = [...(p.comments || []), comment];
+
+    // Notify project owner
+    if (p.ownerId && p.ownerId !== comment.authorId) {
+      saveNotificationToDB({
+        id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        userId: p.ownerId,
+        type: 'new_comment',
+        title: 'New Project Comment 💬',
+        message: `${comment.authorName} commented on your project "${p.title}".`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        link: '/projects'
+      }).catch(() => {});
+    }
+  }
+  return true;
+}
+
+export async function toggleEventRegistrationInDB(
+  eventId: string,
+  userId: string
+): Promise<{ isRegistered: boolean; attendeesCount: number }> {
+  const client = getDocClient();
+  let isNowRegistered = true;
+
+  if (client) {
+    try {
+      const checkRes = await client.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            pk: `EVENT#${eventId}`,
+            sk: `RSVP#${userId}`
+          }
+        })
+      );
+
+      if (checkRes.Item) {
+        // Unregister
+        await client.send(
+          new DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: {
+              pk: `EVENT#${eventId}`,
+              sk: `RSVP#${userId}`
+            }
+          })
+        );
+        isNowRegistered = false;
+      } else {
+        // Register
+        await client.send(
+          new PutCommand({
+            TableName: TABLE_NAME,
+            Item: {
+              pk: `EVENT#${eventId}`,
+              sk: `RSVP#${userId}`,
+              type: 'RSVP',
+              eventId,
+              userId,
+              registeredAt: new Date().toISOString()
+            }
+          })
+        );
+        isNowRegistered = true;
+      }
+    } catch (err) {
+      console.warn('[DB] Error toggling RSVP in DynamoDB:', err);
+    }
+  }
+
+  return { isRegistered: isNowRegistered, attendeesCount: isNowRegistered ? 1 : 0 };
+}
+
+export async function saveNotificationToDB(notification: AppNotification): Promise<boolean> {
+  if (globalStore.__cc_notifications) {
+    globalStore.__cc_notifications.set(notification.id, notification);
+  }
+  const client = getDocClient();
+  if (client) {
+    try {
+      await client.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: {
+            pk: `NOTIF#${notification.id}`,
+            sk: `USER#${notification.userId}`,
+            recordType: 'NOTIFICATION',
+            ...notification
+          }
+        })
+      );
+    } catch (err) {
+      console.warn('[DB] Failed to save notification to DynamoDB:', err);
+    }
+  }
+  return true;
+}
+
+export async function getNotificationsFromDB(userId: string): Promise<AppNotification[]> {
+  const client = getDocClient();
+  let dbNotifs: AppNotification[] = [];
+
+  if (client) {
+    try {
+      const command = new ScanCommand({
+        TableName: TABLE_NAME,
+        FilterExpression: 'recordType = :t AND userId = :uid',
+        ExpressionAttributeValues: {
+          ':t': 'NOTIFICATION',
+          ':uid': userId
+        }
+      });
+      const res = await client.send(command);
+      if (res.Items && res.Items.length > 0) {
+        dbNotifs = res.Items.map((it) => ({
+          id: it.id || (it.pk as string).replace('NOTIF#', ''),
+          userId: it.userId,
+          type: it.type || 'system',
+          title: it.title || 'Notification',
+          message: it.message || '',
+          read: Boolean(it.read),
+          createdAt: it.createdAt || 'Just now',
+          link: it.link
+        }));
+      }
+    } catch (err) {
+      console.warn('[DB] Failed to scan notifications from DynamoDB:', err);
+    }
+  }
+
+  const map = new Map<string, AppNotification>();
+  if (globalStore.__cc_notifications) {
+    for (const n of globalStore.__cc_notifications.values()) {
+      if (n.userId === userId) map.set(n.id, n);
+    }
+  }
+  for (const n of dbNotifs) {
+    map.set(n.id, n);
+  }
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+export async function markNotificationReadInDB(notificationId: string, userId: string): Promise<boolean> {
+  if (globalStore.__cc_notifications?.has(notificationId)) {
+    const n = globalStore.__cc_notifications.get(notificationId)!;
+    n.read = true;
+  }
+  const client = getDocClient();
+  if (client) {
+    try {
+      await client.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            pk: `NOTIF#${notificationId}`,
+            sk: `USER#${userId}`
+          },
+          UpdateExpression: 'SET #read = :r',
+          ExpressionAttributeNames: { '#read': 'read' },
+          ExpressionAttributeValues: { ':r': true }
+        })
+      );
+    } catch (err) {
+      console.warn('[DB] Failed to mark notification read in DynamoDB:', err);
+    }
+  }
+  return true;
+}
+
+export async function saveReportToDB(report: Report): Promise<boolean> {
+  if (globalStore.__cc_reports) {
+    globalStore.__cc_reports.set(report.id, report);
+  }
+  const client = getDocClient();
+  if (client) {
+    try {
+      await client.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: {
+            pk: `REPORT#${report.id}`,
+            sk: 'METADATA',
+            type: 'REPORT',
+            ...report
+          }
+        })
+      );
+    } catch (err) {
+      console.warn('[DB] Failed to save report in DynamoDB:', err);
+    }
+  }
+  return true;
+}
+
+export async function getReportsFromDB(): Promise<Report[]> {
+  const client = getDocClient();
+  let dbReports: Report[] = [];
+  if (client) {
+    try {
+      const command = new ScanCommand({
+        TableName: TABLE_NAME,
+        FilterExpression: 'begins_with(pk, :p)',
+        ExpressionAttributeValues: { ':p': 'REPORT#' }
+      });
+      const res = await client.send(command);
+      if (res.Items && res.Items.length > 0) {
+        dbReports = res.Items.map((it) => ({
+          id: it.id || (it.pk as string).replace('REPORT#', ''),
+          reporterId: it.reporterId,
+          targetType: it.targetType,
+          targetId: it.targetId,
+          reason: it.reason,
+          details: it.details,
+          status: it.status || 'pending',
+          createdAt: it.createdAt || 'Recent'
+        }));
+      }
+    } catch (err) {
+      console.warn('[DB] Error scanning reports from DynamoDB:', err);
+    }
+  }
+
+  const map = new Map<string, Report>();
+  if (globalStore.__cc_reports) {
+    for (const r of globalStore.__cc_reports.values()) map.set(r.id, r);
+  }
+  for (const r of dbReports) map.set(r.id, r);
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+export async function updateReportStatusInDB(
+  reportId: string,
+  status: 'resolved' | 'dismissed'
+): Promise<boolean> {
+  if (globalStore.__cc_reports?.has(reportId)) {
+    const r = globalStore.__cc_reports.get(reportId)!;
+    r.status = status;
+  }
+  const client = getDocClient();
+  if (client) {
+    try {
+      await client.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            pk: `REPORT#${reportId}`,
+            sk: 'METADATA'
+          },
+          UpdateExpression: 'SET #status = :s, resolvedAt = :t',
+          ExpressionAttributeNames: { '#status': 'status' },
+          ExpressionAttributeValues: { ':s': status, ':t': new Date().toISOString() }
+        })
+      );
+    } catch (err) {
+      console.warn('[DB] Error updating report in DynamoDB:', err);
+    }
+  }
+  return true;
+}
+
