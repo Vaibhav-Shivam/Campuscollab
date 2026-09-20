@@ -39,5 +39,262 @@
       "Hackathons"
     ],
     "proofs": []
+  },
+  {
+    "id": "student-1789819780125",
+    "name": "Test User",
+    "email": "testuser@college.edu",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Test%20User",
+    "college": "IIT Bombay",
+    "year": "1st Year",
+    "major": "Computer Science",
+    "primaryRole": "Frontend Developer",
+    "bio": "New student on CampusCollab ready to build and collaborate.",
+    "status": "available",
+    "skills": [
+      {
+        "name": "Frontend Developer",
+        "level": 4,
+        "category": "Development"
+      }
+    ],
+    "projectCount": 0,
+    "hackathonCount": 0,
+    "interests": [
+      "Projects",
+      "Hackathons"
+    ],
+    "proofs": []
+  },
+  {
+    "name": "Riya Patel",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Riya%20Patel",
+    "college": "VIT Vellore",
+    "year": "1st Year",
+    "major": "Design & Technology",
+    "primaryRole": "UI/UX & Product Designer",
+    "bio": "New student on CampusCollab ready to build and collaborate.",
+    "status": "available",
+    "skills": [
+      {
+        "name": "Figma",
+        "level": 4,
+        "category": "Design"
+      },
+      {
+        "name": "Design Systems",
+        "level": 4,
+        "category": "Design"
+      },
+      {
+        "name": "Prototyping",
+        "level": 4,
+        "category": "Design"
+      }
+    ],
+    "projectCount": 0,
+    "hackathonCount": 0,
+    "email": "riya.1789815862272@vit.edu",
+    "interests": [
+      "Projects",
+      "Hackathons"
+    ],
+    "proofs": [],
+    "id": "student-1789815862708"
+  },
+  {
+    "id": "student-1789817590107",
+    "name": "Pooja Hegde",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Pooja%20Hegde",
+    "college": "IIT Delhi",
+    "year": "3rd Year",
+    "major": "Computer Science & Data",
+    "primaryRole": "AI & ML Engineer",
+    "bio": "Building vision-language foundation models for autonomous systems",
+    "status": "available",
+    "skills": [
+      {
+        "name": "TensorFlow",
+        "level": 4,
+        "category": "AI/ML"
+      },
+      {
+        "name": "Deep Learning",
+        "level": 4,
+        "category": "AI/ML"
+      },
+      {
+        "name": "Python",
+        "level": 4,
+        "category": "Development"
+      },
+      {
+        "name": "Computer Vision",
+        "level": 4,
+        "category": "AI/ML"
+      }
+    ],
+    "projectCount": 0,
+    "hackathonCount": 0,
+    "email": "pooja.1789817589@iitd.ac.in",
+    "interests": [
+      "Projects",
+      "Hackathons"
+    ],
+    "proofs": []
+  },
+  {
+    "name": "Tanmay Bhatia",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Tanmay%20Bhatia",
+    "college": "DTU Delhi",
+    "year": "2nd Year",
+    "major": "Computer Engineering",
+    "primaryRole": "AI & ML Engineer",
+    "bio": "Building autonomous AI agents",
+    "status": "available",
+    "skills": [
+      {
+        "name": "PyTorch",
+        "level": 4,
+        "category": "AI/ML"
+      },
+      {
+        "name": "NLP",
+        "level": 4,
+        "category": "AI/ML"
+      },
+      {
+        "name": "Python",
+        "level": 4,
+        "category": "Development"
+      },
+      {
+        "name": "FastAPI",
+        "level": 4,
+        "category": "Development"
+      }
+    ],
+    "projectCount": 0,
+    "hackathonCount": 0,
+    "email": "tanmay.1789817189@testcollege.edu",
+    "interests": [
+      "Projects",
+      "Hackathons"
+    ],
+    "proofs": [],
+    "id": "student-1789817190311"
+  },
+  {
+    "id": "student-1789813468273",
+    "name": "Aarav Mehta",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Aarav%20Mehta",
+    "college": "SRM University",
+    "year": "1st Year",
+    "major": "Computer Science",
+    "primaryRole": "Mobile App Developer",
+    "bio": "New student on CampusCollab ready to build and collaborate.",
+    "status": "available",
+    "skills": [
+      {
+        "name": "Flutter",
+        "level": 4,
+        "category": "Development"
+      },
+      {
+        "name": "Dart",
+        "level": 4,
+        "category": "Development"
+      },
+      {
+        "name": "Firebase",
+        "level": 4,
+        "category": "Development"
+      }
+    ],
+    "projectCount": 0,
+    "hackathonCount": 0,
+    "email": "aarav.mehta@srm.edu",
+    "interests": [
+      "Projects",
+      "Hackathons"
+    ],
+    "proofs": []
+  },
+  {
+    "name": "Devansh Gupta",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Devansh%20Gupta",
+    "college": "IIT Bombay",
+    "year": "1st Year",
+    "major": "Computer Science",
+    "primaryRole": "Full-Stack Web3 Developer",
+    "bio": "New student on CampusCollab ready to build and collaborate.",
+    "status": "available",
+    "skills": [
+      {
+        "name": "Solidity",
+        "level": 4,
+        "category": "Development"
+      },
+      {
+        "name": "Rust",
+        "level": 4,
+        "category": "Development"
+      },
+      {
+        "name": "Next.js",
+        "level": 4,
+        "category": "Development"
+      },
+      {
+        "name": "Ethereum",
+        "level": 4,
+        "category": "Development"
+      }
+    ],
+    "projectCount": 0,
+    "hackathonCount": 0,
+    "email": "devansh.1789815871219@iitb.ac.in",
+    "interests": [
+      "Projects",
+      "Hackathons"
+    ],
+    "proofs": [],
+    "id": "student-1789815875130"
+  },
+  {
+    "id": "student-1789820062097",
+    "name": "Shivam Sharma",
+    "email": "shivam@test.edu",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Shivam%20Sharma",
+    "college": "IIT Delhi",
+    "year": "1st Year",
+    "major": "AI Engineering",
+    "primaryRole": "AI Specialist",
+    "bio": "New student on CampusCollab ready to build and collaborate.",
+    "status": "available",
+    "skills": [
+      {
+        "name": "PyTorch",
+        "level": 4,
+        "category": "AI/ML"
+      },
+      {
+        "name": "Python",
+        "level": 4,
+        "category": "Development"
+      },
+      {
+        "name": "FastAPI",
+        "level": 4,
+        "category": "Development"
+      }
+    ],
+    "projectCount": 0,
+    "hackathonCount": 0,
+    "interests": [
+      "Projects",
+      "Hackathons"
+    ],
+    "proofs": []
   }
 ]

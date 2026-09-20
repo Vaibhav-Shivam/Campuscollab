@@ -75,7 +75,9 @@ export async function POST(request: Request) {
       id: studentId,
       name: name.trim(),
       email: normalizedEmail,
-      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name.trim())}`,
+      avatar: (body.avatar && typeof body.avatar === 'string' && body.avatar.trim()) 
+        ? body.avatar.trim() 
+        : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name.trim())}`,
       college: college.trim(),
       year: year || '1st Year',
       major: major || 'Computer Science',

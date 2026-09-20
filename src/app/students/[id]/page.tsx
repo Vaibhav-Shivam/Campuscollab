@@ -21,7 +21,8 @@ import {
   ArrowUpRight,
   Edit3,
   Plus,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Camera
 } from 'lucide-react';
 
 function GithubIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -142,11 +143,23 @@ export default function StudentProfilePage() {
         <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 sm:p-10 shadow-[6px_6px_0px_0px_#000] relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <img
-                src={student.avatar}
-                alt={student.name}
-                className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-[2.5px] border-black shadow-[4px_4px_0px_0px_#000]"
-              />
+              <div className="relative group">
+                <img
+                  src={student.avatar}
+                  alt={student.name}
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-[2.5px] border-black shadow-[4px_4px_0px_0px_#000] bg-stone-100"
+                />
+                {isSelf && (
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(true)}
+                    className="absolute -bottom-1 -right-1 p-2 bg-[#FFDE59] hover:bg-[#FF70A6] text-black border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                    title="Change Profile Picture"
+                  >
+                    <Camera className="w-4 h-4 text-black" />
+                  </button>
+                )}
+              </div>
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black">

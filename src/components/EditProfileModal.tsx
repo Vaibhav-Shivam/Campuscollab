@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Student, ProjectProof } from '@/types';
+import AvatarPicker from '@/components/AvatarPicker';
 import {
   X,
   Link as LinkIcon,
@@ -54,8 +55,11 @@ export default function EditProfileModal({ isOpen, onClose, student }: EditProfi
   const { currentUser, updateUserProfile, showToast } = useApp();
   const targetStudent = student || currentUser;
 
-  const [activeTab, setActiveTab] = useState<'links' | 'proofs' | 'info'>('links');
+  const [activeTab, setActiveTab] = useState<'avatar' | 'links' | 'proofs' | 'info'>('avatar');
   const [loading, setLoading] = useState(false);
+
+  // Avatar field
+  const [avatar, setAvatar] = useState(targetStudent.avatar || '');
 
   // Link fields
   const [githubUrl, setGithubUrl] = useState(targetStudent.githubUrl || '');
@@ -88,6 +92,7 @@ export default function EditProfileModal({ isOpen, onClose, student }: EditProfi
   // Sync state when student prop changes
   useEffect(() => {
     if (targetStudent) {
+      setAvatar(targetStudent.avatar || '');
       setGithubUrl(targetStudent.githubUrl || '');
       setPortfolioUrl(targetStudent.portfolioUrl || '');
       setLinkedinUrl(targetStudent.linkedinUrl || '');
@@ -155,6 +160,7 @@ export default function EditProfileModal({ isOpen, onClose, student }: EditProfi
       });
 
     const updatedData: Partial<Student> = {
+      avatar: avatar.trim() || targetStudent.avatar,
       githubUrl: githubUrl.trim() || undefined,
       portfolioUrl: portfolioUrl.trim() || undefined,
       linkedinUrl: linkedinUrl.trim() || undefined,
@@ -212,42 +218,91 @@ export default function EditProfileModal({ isOpen, onClose, student }: EditProfi
           Add your GitHub, live portfolio, Figma canvas, and verified project proofs to attract top campus teammates.
         </p>
 
+        {/* Top Profile Summary Bar */}
+        <div className="flex items-center justify-between p-3.5 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] mb-6">
+          <div className="flex items-center gap-3">
+            <img
+              src={avatar || targetStudent.avatar}
+              alt="Avatar preview"
+              className="w-12 h-12 rounded-xl object-cover border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000] bg-stone-100"
+            />
+            <div>
+              <div className="text-xs font-black uppercase text-black">{targetStudent.name}</div>
+              <div className="text-[11px] font-bold text-stone-500 truncate max-w-[200px] sm:max-w-xs">{targetStudent.college}</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('avatar')}
+            className={`text-[11px] font-black uppercase px-3 py-1.5 rounded-xl border border-black shadow-[1.5px_1.5px_0px_0px_#000] transition-all cursor-pointer ${
+              activeTab === 'avatar' ? 'bg-black text-white' : 'bg-[#FFDE59] hover:bg-[#FF70A6] text-black'
+            }`}
+          >
+            Change Photo 📸
+          </button>
+        </div>
+
         {/* Tab Navigation */}
-        <div className="grid grid-cols-3 gap-2 p-1.5 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] mb-6">
+          <button
+            type="button"
+            onClick={() => setActiveTab('avatar')}
+            className={`py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+              activeTab === 'avatar'
+                ? 'bg-[#FFDE59] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+                : 'text-neutral-600 hover:text-black'
+            }`}
+          >
+            Profile Pic 🎭
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab('links')}
             className={`py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
               activeTab === 'links'
-                ? 'bg-[#FFDE59] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+                ? 'bg-[#4FD1C5] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
                 : 'text-neutral-600 hover:text-black'
             }`}
           >
-            Portfolio & Links
+            Links & Socials 🔗
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('proofs')}
             className={`py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
               activeTab === 'proofs'
-                ? 'bg-[#4FD1C5] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+                ? 'bg-[#FF70A6] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
                 : 'text-neutral-600 hover:text-black'
             }`}
           >
-            Project Proofs ({proofs.length})
+            Proofs ({proofs.length}) 🚀
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('info')}
             className={`py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
               activeTab === 'info'
-                ? 'bg-[#FF70A6] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+                ? 'bg-[#9B87F5] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
                 : 'text-neutral-600 hover:text-black'
             }`}
           >
-            Bio & Role
+            Bio & Role 📝
           </button>
         </div>
+
+        {/* TAB 0: Avatar Customizer */}
+        {activeTab === 'avatar' && (
+          <div className="space-y-4">
+            <AvatarPicker
+              currentAvatar={avatar || targetStudent.avatar}
+              onSelectAvatar={(url) => {
+                setAvatar(url);
+                showToast('Profile picture selected!', 'success', 'Click "Save Changes" below to apply.');
+              }}
+              mode="inline"
+            />
+          </div>
+        )}
 
         {/* TAB 1: Links & Portfolio */}
         {activeTab === 'links' && (

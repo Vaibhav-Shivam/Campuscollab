@@ -4,11 +4,14 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { UserPlus, ArrowLeft, ShieldCheck, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, ArrowLeft, ShieldCheck, AlertCircle, Eye, EyeOff, Camera } from 'lucide-react';
+import AvatarPicker from '@/components/AvatarPicker';
 
 export default function SignupPage() {
   const router = useRouter();
   const { signup } = useApp();
+  const [avatar, setAvatar] = useState('https://api.dicebear.com/7.x/bottts/svg?seed=Builder&backgroundColor=b6e3f4');
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,7 +44,8 @@ export default function SignupPage() {
       year,
       primaryRole,
       skills,
-      bio
+      bio,
+      avatar
     });
 
     setLoading(false);
@@ -87,6 +91,45 @@ export default function SignupPage() {
         )}
 
         <form onSubmit={handleSignup} className="space-y-4">
+          {/* Profile Picture Selector */}
+          <div className="bg-white border-2 border-black rounded-2xl p-4 shadow-[3px_3px_0px_0px_#000] flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="relative">
+                <img
+                  src={avatar}
+                  alt="Profile Avatar"
+                  className="w-14 h-14 rounded-2xl object-cover border-2 border-black shadow-[2px_2px_0px_0px_#000] bg-stone-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarModal(true)}
+                  className="absolute -bottom-1 -right-1 p-1 bg-[#FFDE59] hover:bg-[#FF70A6] border border-black rounded-lg text-black shadow-[1px_1px_0px_0px_#000] cursor-pointer"
+                  title="Change avatar"
+                >
+                  <Camera className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-[10px] font-black uppercase tracking-wider text-stone-500">
+                  Profile Picture
+                </div>
+                <div className="text-xs font-black uppercase text-black">
+                  {avatar.startsWith('data:') ? 'Custom Photo' : 'Graphic Avatar'}
+                </div>
+                <p className="text-[11px] font-semibold text-stone-600">
+                  Choose from graphics or upload photo
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAvatarModal(true)}
+              className="bg-[#FFDE59] hover:bg-[#FF70A6] text-black font-black text-xs uppercase px-3.5 py-2 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap"
+            >
+              Change Pic 🎭
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-black uppercase tracking-wider mb-1">
@@ -252,6 +295,18 @@ export default function SignupPage() {
           </Link>
         </div>
       </div>
+
+      {showAvatarModal && (
+        <AvatarPicker
+          currentAvatar={avatar}
+          onSelectAvatar={(url) => {
+            setAvatar(url);
+          }}
+          isOpen={showAvatarModal}
+          onClose={() => setShowAvatarModal(false)}
+          mode="modal"
+        />
+      )}
     </div>
   );
 }

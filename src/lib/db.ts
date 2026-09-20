@@ -73,15 +73,8 @@ function safeWriteFile(filePath: string, content: string): boolean {
 function getLocalRegisteredStudents(): Student[] {
   const map = new Map<string, Student>();
 
-  // 1. In-memory cache
-  if (globalStore.__cc_students) {
-    for (const s of globalStore.__cc_students.values()) {
-      map.set(s.id, s);
-    }
-  }
-
-  // 2. Multi-tier file stores (Primary and Backup)
-  const files = [PRIMARY_STUDENTS_FILE, BACKUP_STUDENTS_FILE];
+  // 1. Multi-tier file stores (Backup first, Primary takes precedence)
+  const files = [BACKUP_STUDENTS_FILE, PRIMARY_STUDENTS_FILE];
   for (const f of files) {
     const raw = safeReadFile(f);
     if (raw) {
@@ -98,6 +91,15 @@ function getLocalRegisteredStudents(): Student[] {
           }
         }
       } catch (e) {}
+    }
+  }
+
+  // 2. In-memory cache for unsaved entries
+  if (globalStore.__cc_students) {
+    for (const [id, s] of globalStore.__cc_students.entries()) {
+      if (!map.has(id)) {
+        map.set(id, s);
+      }
     }
   }
 
@@ -472,15 +474,15 @@ export async function checkDBHealth(): Promise<{ status: 'HEALTHY' | 'DEGRADED';
 }
 
 export async function getStudentById(studentId: string): Promise<Student | null> {
-  // 1. In-memory
-  if (globalStore.__cc_students?.has(studentId)) {
-    return globalStore.__cc_students.get(studentId)!;
-  }
-
-  // 2. Local registered students
+  // 1. Local registered students (fresh from persistent store)
   const local = getLocalRegisteredStudents();
   const found = local.find((s) => s.id === studentId);
   if (found) return found;
+
+  // 2. In-memory cache fallback
+  if (globalStore.__cc_students?.has(studentId)) {
+    return globalStore.__cc_students.get(studentId)!;
+  }
 
   // 3. Direct DynamoDB key lookup
   const client = getDocClient();

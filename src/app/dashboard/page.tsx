@@ -22,8 +22,10 @@ import {
   ExternalLink,
   Code2,
   Plus,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Camera
 } from 'lucide-react';
+import AvatarPicker from '@/components/AvatarPicker';
 import { AvailabilityStatus } from '@/types';
 
 function GithubIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -61,6 +63,8 @@ export default function StudentDashboardPage() {
     requests,
     events,
     updateUserStatus,
+    updateUserProfile,
+    showToast,
     respondToRequest,
     isAuthenticated,
     isHydrated,
@@ -70,6 +74,7 @@ export default function StudentDashboardPage() {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [lookingGoal, setLookingGoal] = useState(currentUser.lookingForRole || '');
   const [statusUpdatedToast, setStatusUpdatedToast] = useState(false);
 
@@ -136,11 +141,21 @@ export default function StudentDashboardPage() {
         <div className="bg-white border-[2.5px] border-black rounded-2xl p-6 sm:p-10 shadow-[6px_6px_0px_0px_#000] relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
-                className="w-20 h-20 rounded-2xl object-cover border-[2.5px] border-black shadow-[4px_4px_0px_0px_#000]"
-              />
+              <div className="relative group">
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  className="w-20 h-20 rounded-2xl object-cover border-[2.5px] border-black shadow-[4px_4px_0px_0px_#000] bg-stone-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarModal(true)}
+                  className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-[#FFDE59] hover:bg-[#FF70A6] text-black border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                  title="Change Profile Picture"
+                >
+                  <Camera className="w-3.5 h-3.5 text-black" />
+                </button>
+              </div>
               <div className="space-y-1">
                 <div className="text-[10px] font-black text-black uppercase tracking-wider bg-[#FFDE59] px-2.5 py-0.5 rounded-md border border-black inline-block shadow-[1.5px_1.5px_0px_0px_#000]">
                   ★ Student Dashboard
@@ -733,6 +748,19 @@ export default function StudentDashboardPage() {
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           student={currentUser}
+        />
+      )}
+
+      {showAvatarModal && (
+        <AvatarPicker
+          currentAvatar={currentUser.avatar}
+          onSelectAvatar={async (newUrl) => {
+            await updateUserProfile({ avatar: newUrl });
+            showToast('Profile picture updated! 📸', 'success', 'Your new photo is now live across the platform.');
+          }}
+          isOpen={showAvatarModal}
+          onClose={() => setShowAvatarModal(false)}
+          mode="modal"
         />
       )}
     </div>

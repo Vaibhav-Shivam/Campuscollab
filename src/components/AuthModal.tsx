@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { X, LogIn, UserPlus, Sparkles, AlertCircle, ShieldCheck, KeyRound, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { X, LogIn, UserPlus, Sparkles, AlertCircle, ShieldCheck, KeyRound, CheckCircle2, Eye, EyeOff, Camera } from 'lucide-react';
+import AvatarPicker from '@/components/AvatarPicker';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -40,6 +41,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
   }, [isOpen, defaultMode]);
 
   // Signup form state
+  const [signupAvatar, setSignupAvatar] = useState('https://api.dicebear.com/7.x/bottts/svg?seed=Builder&backgroundColor=b6e3f4');
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [name, setName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
@@ -88,7 +91,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
         college,
         major,
         primaryRole,
-        skills
+        skills,
+        avatar: signupAvatar
       });
 
       if (res.success) {
@@ -376,6 +380,42 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
         {/* Sign Up Form */}
         {mode === 'signup' && (
           <form onSubmit={handleSignupSubmit} className="space-y-3.5">
+            {/* Profile Picture Selector */}
+            <div className="bg-white border-2 border-black rounded-2xl p-3 shadow-[2.5px_2.5px_0px_0px_#000] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <img
+                    src={signupAvatar}
+                    alt="Profile Avatar"
+                    className="w-12 h-12 rounded-xl object-cover border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000] bg-stone-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarPicker(true)}
+                    className="absolute -bottom-1 -right-1 p-1 bg-[#FFDE59] border border-black rounded-lg text-black shadow-[1px_1px_0px_0px_#000] cursor-pointer"
+                    title="Change picture"
+                  >
+                    <Camera className="w-3 h-3" />
+                  </button>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-[10px] font-black uppercase tracking-wider text-stone-500">
+                    Profile Picture
+                  </div>
+                  <div className="text-xs font-black uppercase text-black truncate max-w-[150px]">
+                    {signupAvatar.startsWith('data:') ? 'Custom Photo' : 'Graphic Avatar'}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAvatarPicker(true)}
+                className="bg-[#FFDE59] hover:bg-[#FF70A6] text-black font-black text-[11px] uppercase px-3 py-1.5 rounded-xl border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap"
+              >
+                Change Pic 🎭
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider mb-1">
@@ -640,6 +680,16 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
           </button>
         </div>
       </div>
+
+      {showAvatarPicker && (
+        <AvatarPicker
+          currentAvatar={signupAvatar}
+          onSelectAvatar={(url) => setSignupAvatar(url)}
+          isOpen={showAvatarPicker}
+          onClose={() => setShowAvatarPicker(false)}
+          mode="modal"
+        />
+      )}
     </div>
   );
 }
