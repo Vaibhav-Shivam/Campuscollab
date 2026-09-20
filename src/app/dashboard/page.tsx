@@ -61,7 +61,11 @@ export default function StudentDashboardPage() {
     requests,
     events,
     updateUserStatus,
-    respondToRequest
+    respondToRequest,
+    isAuthenticated,
+    isHydrated,
+    setAuthModalOpen,
+    setAuthMode
   } = useApp();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -86,6 +90,44 @@ export default function StudentDashboardPage() {
     setStatusUpdatedToast(true);
     setTimeout(() => setStatusUpdatedToast(false), 2500);
   };
+
+  if (isHydrated && !isAuthenticated) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center px-4 py-16 bg-[#FAF8F5]">
+        <div className="max-w-md w-full bg-white border-[2.5px] border-black rounded-2xl p-8 shadow-[6px_6px_0px_0px_#000] text-center space-y-6">
+          <div className="w-16 h-16 bg-[#FFDE59] border-2 border-black rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-[2.5px_2.5px_0px_0px_#000]">
+            🔒
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black uppercase text-black">Member Dashboard</h2>
+            <p className="text-xs font-semibold text-stone-600 leading-relaxed">
+              Please log in or create your student account to manage your profile, toggle availability, and review collaboration requests.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <button
+              onClick={() => {
+                setAuthMode('login');
+                setAuthModalOpen(true);
+              }}
+              className="flex-1 bg-[#4FD1C5] hover:bg-[#38b2ac] text-black font-black text-xs uppercase py-3 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+            >
+              Log In
+            </button>
+            <button
+              onClick={() => {
+                setAuthMode('signup');
+                setAuthModalOpen(true);
+              }}
+              className="flex-1 bg-[#FF70A6] hover:bg-[#ff85b3] text-black font-black text-xs uppercase py-3 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+            >
+              Sign Up
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] py-10 md:py-16">

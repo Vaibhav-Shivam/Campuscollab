@@ -42,12 +42,33 @@ export async function POST(request: Request) {
 
     // Look up or construct the Admin user
     let adminUser = await findStudentByEmail(ADMIN_EMAIL);
-    if (!adminUser) {
-      adminUser = await getStudentById('student-1');
-    }
 
-    const studentId = adminUser?.id || 'admin-vaibhav';
+    const studentId = adminUser?.id || 'student-1789820112921';
     const name = adminUser?.name || 'Vaibhav Shivam';
+
+    if (!adminUser) {
+      adminUser = {
+        id: studentId,
+        name,
+        email: ADMIN_EMAIL,
+        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
+        college: 'National Institute of Technology',
+        year: 'Lead Administrator',
+        major: 'Computer Science & Engineering',
+        primaryRole: 'Platform Administrator',
+        bio: 'Founder and Platform Administrator of CampusCollab.',
+        status: 'available',
+        skills: [
+          { name: 'Full-Stack Engineering', level: 5, category: 'Development' },
+          { name: 'System Architecture', level: 5, category: 'Development' },
+          { name: 'AWS Cloud', level: 5, category: 'Development' }
+        ],
+        projectCount: 2,
+        hackathonCount: 4,
+        interests: ['System Design', 'AI Applications', 'Campus Community'],
+        proofs: []
+      };
+    }
 
     // Sign a real cryptographic JWT with role: 'admin'
     const token = signJWT({

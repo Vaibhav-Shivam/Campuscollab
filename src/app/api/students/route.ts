@@ -9,12 +9,17 @@ export async function GET(request: Request) {
   try {
     const session = await getSessionFromRequest(request);
     const { searchParams } = new URL(request.url);
+    const targetId = searchParams.get('id');
     const skill = searchParams.get('skill')?.toLowerCase();
     const status = searchParams.get('status');
     const search = searchParams.get('q')?.toLowerCase();
 
     const { students, source } = await fetchStudentsFromDB();
     let results = [...students];
+
+    if (targetId) {
+      results = results.filter((s) => s.id === targetId);
+    }
 
     if (search) {
       results = results.filter((s) => {

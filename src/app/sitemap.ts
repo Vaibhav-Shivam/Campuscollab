@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
-import { initialProjects, initialStudents } from '@/data/mockData';
+import { initialProjects } from '@/data/mockData';
+import { fetchStudentsFromDB } from '@/lib/db';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://campuscollab-rx9f.onrender.com';
 
   const staticRoutes = [
@@ -25,7 +26,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  const studentRoutes = initialStudents.map((s) => ({
+  let realStudents: any[] = [];
+  try {
+    const res = await fetchStudentsFromDB();
+    realStudents = res.students || [];
+  } catch (e) {
+    realStudents = [];
+  }
+
+  const studentRoutes = realStudents.map((s) => ({
     url: `${baseUrl}/students/${s.id}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,

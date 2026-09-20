@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     // Server-verified identity: use authenticated session when available
-    const ownerId = session?.userId || body.ownerId || 'student-1';
+    const ownerId = session?.userId || body.ownerId || 'student-1789820112921';
     const ownerName = session?.name || body.ownerName || 'Project Lead';
     const ownerCollege = session?.college || body.ownerCollege || 'College Campus';
 

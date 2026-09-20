@@ -15,6 +15,7 @@ export default function HomePage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const availableTalent = allStudents.filter((s) => s.status === 'available').slice(0, 3);
+  const talentToShow = availableTalent.length > 0 ? availableTalent : allStudents.slice(0, 3);
   const featuredProjects = projects.slice(0, 3);
   const upcomingEvents = events.slice(0, 2);
 
@@ -167,11 +168,30 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {availableTalent.map((student) => (
-            <StudentCard key={student.id} student={student} />
-          ))}
-        </div>
+        {talentToShow.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {talentToShow.map((student) => (
+              <StudentCard key={student.id} student={student} />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white border-[2.5px] border-black rounded-2xl p-8 text-center shadow-[4px_4px_0px_0px_#000] space-y-4">
+            <div className="w-14 h-14 bg-[#FFDE59] border-2 border-black rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-[2px_2px_0px_0px_#000]">
+              🚀
+            </div>
+            <h3 className="text-xl font-black uppercase text-black">Be The First Member</h3>
+            <p className="text-stone-600 text-xs font-bold max-w-md mx-auto">
+              Join your campus network to showcase your skills, share your GitHub/portfolio proofs, and collaborate on real projects.
+            </p>
+            <Link
+              href="/students"
+              className="inline-flex items-center gap-2 bg-[#4FD1C5] hover:bg-[#38b2ac] text-black font-black text-xs uppercase px-5 py-3 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+            >
+              <span>Explore Student Directory</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* 6. Active Project Requirements */}

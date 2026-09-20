@@ -294,12 +294,8 @@ export async function fetchStudentsFromDB(): Promise<{ students: Student[]; sour
     return timeB - timeA;
   });
 
-  // Mock template students for campus exploration
-  const realIds = new Set(realStudents.map((s) => s.id));
-  const remainingMock = initialStudents.filter((s) => !realIds.has(s.id));
-
-  const allStudentsList = [...realStudents, ...remainingMock];
-  return { students: allStudentsList, source };
+  // REAL REGISTERED STUDENTS ONLY: Zero demo personas or mock profiles
+  return { students: realStudents, source };
 }
 
 export async function saveStudentToDB(student: Student): Promise<boolean> {
@@ -360,7 +356,7 @@ export async function fetchProjectsFromDB(): Promise<{ projects: Project[]; sour
       tagline: it.tagline || 'Student collaboration project',
       description: it.description || '',
       type: it.type || 'Personal',
-      ownerId: it.ownerId || 'student-1',
+      ownerId: it.ownerId || 'student-1789820112921',
       ownerName: it.ownerName || 'Campus Builder',
       ownerAvatar: it.ownerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
       ownerCollege: it.ownerCollege || 'Engineering Institute',
@@ -535,8 +531,8 @@ export async function getStudentById(studentId: string): Promise<Student | null>
     } catch (e) {}
   }
 
-  // 4. Initial template students
-  return initialStudents.find((s) => s.id === studentId) || null;
+  // Student not found in real registered database
+  return null;
 }
 
 export async function findStudentByEmail(email: string): Promise<Student | null> {
@@ -855,10 +851,9 @@ export async function getCollaborationRequestsFromDB(userId?: string): Promise<C
     }
   }
 
-  // Merge with local requests and initial mock data
+  // Real requests from persistent store and DynamoDB only
   const local = getLocalRequests();
   const requestMap = new Map<string, CollaborationRequest>();
-  initialRequests.forEach((r) => requestMap.set(r.id, r));
   local.forEach((r) => requestMap.set(r.id, r));
   dbRequests.forEach((r) => requestMap.set(r.id, r));
 

@@ -11,8 +11,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const {
     currentUser,
-    allStudents,
-    switchUser,
     requests,
     isAuthenticated,
     isAdmin,
@@ -157,53 +155,6 @@ export default function Navbar() {
                           <StatusBadge status={currentUser.status} size="sm" />
                         </div>
                       </div>
-
-                      {/* Switch Persona section - ONLY VISIBLE TO ADMIN */}
-                      {isAdmin && (
-                        <>
-                          <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-                            <div className="text-[10px] font-black uppercase tracking-wider text-black flex items-center gap-1">
-                              <UserCheck className="w-3.5 h-3.5 text-[#FF70A6]" />
-                              Switch Demo Persona
-                            </div>
-                            <span className="text-[9px] font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-300">
-                              Admin Only
-                            </span>
-                          </div>
-
-                          <div className="max-h-48 overflow-y-auto px-2 space-y-1">
-                            {allStudents.map((student) => (
-                              <button
-                                key={student.id}
-                                onClick={() => {
-                                  switchUser(student.id);
-                                  setUserMenuOpen(false);
-                                }}
-                                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left text-xs transition-all cursor-pointer border ${
-                                  student.id === currentUser.id
-                                    ? 'bg-[#FFDE59] text-black font-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
-                                    : 'border-transparent hover:bg-stone-100 hover:border-black text-black'
-                                }`}
-                              >
-                                <img
-                                  src={student.avatar}
-                                  alt={student.name}
-                                  className="w-6 h-6 rounded-md object-cover border border-black"
-                                />
-                                <div className="flex-1 truncate">
-                                  <div className="truncate font-bold">{student.name}</div>
-                                  <div className="text-[10px] text-stone-600 truncate">
-                                    {student.primaryRole}
-                                  </div>
-                                </div>
-                                {student.id === currentUser.id && (
-                                  <span className="w-2 h-2 rounded-full bg-black"></span>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
 
                       <div className="border-t-2 border-black mt-2 pt-2 px-3 space-y-1.5">
                         <Link

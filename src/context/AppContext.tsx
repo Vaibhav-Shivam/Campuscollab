@@ -13,6 +13,7 @@ interface AppContextType {
   events: CampusEvent[];
   requests: CollaborationRequest[];
   isAuthenticated: boolean;
+  isHydrated: boolean;
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
   authMode: 'login' | 'signup' | 'forgot';
@@ -21,7 +22,6 @@ interface AppContextType {
   signup: (formData: any) => Promise<{ success: boolean; error?: string }>;
   resetPassword: (email: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   logout: () => void;
-  switchUser: (studentId: string) => void;
   updateUserStatus: (status: AvailabilityStatus, lookingForRole?: string) => void;
   updateUserProfile: (updatedFields: Partial<Student>) => Promise<boolean>;
   createProject: (newProject: Omit<Project, 'id' | 'createdAt' | 'ownerId' | 'ownerName' | 'ownerAvatar' | 'ownerCollege' | 'comments' | 'likesCount'>) => Project;
@@ -50,12 +50,12 @@ const STORAGE_KEYS = {
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [students, setStudents] = useState<Student[]>([]);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [events, setEvents] = useState<CampusEvent[]>(initialCampusEvents);
-  const [requests, setRequests] = useState<CollaborationRequest[]>(initialRequests);
-  const [currentUserId, setCurrentUserId] = useState<string>('student-1');
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [requests, setRequests] = useState<CollaborationRequest[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot'>('login');
@@ -81,56 +81,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`/api/students?_t=${Date.now()}`);
       const data = await res.json();
-      if (data.success && Array.isArray(data.students) && data.students.length > 0) {
-        setStudents((prev) => {
-          const serverStudents: Student[] = data.students;
-          const serverStudentMap = new Map(serverStudents.map((s) => [s.id, s]));
-
-          // Preserve any newly created local student that hasn't synced yet
-          const localOnly = prev.filter((s) => !serverStudentMap.has(s.id));
-
-          // Auto-sync local signups to server if server was restarted
-          if (localOnly.length > 0) {
-            localOnly.forEach((localStd) => {
-              if (localStd.id.startsWith('student-17') || !localStd.id.match(/^student-[1-6]$/)) {
-                fetch('/api/students', {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(localStd)
-                }).catch(() => {});
-              }
-            });
-          }
-
-          // Separate real signups from mock students
-          const realStudents: Student[] = [];
-          const mockStudents: Student[] = [];
-
-          for (const s of serverStudents) {
-            if (s.id.startsWith('student-17') || s.id === 'student-live-test' || !s.id.match(/^student-[1-6]$/)) {
-              realStudents.push(s);
-            } else {
-              mockStudents.push(s);
-            }
-          }
-
-          // Sort real students by newest first
-          realStudents.sort((a, b) => {
-            const timeA = parseInt(a.id.replace('student-', ''), 10) || 0;
-            const timeB = parseInt(b.id.replace('student-', ''), 10) || 0;
-            return timeB - timeA;
-          });
-
-          const merged = [...localOnly, ...realStudents, ...mockStudents];
-
-          try {
-            localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(merged));
-          } catch (e) {
-            console.warn('Failed to sync students to localStorage:', e);
-          }
-
-          return merged;
-        });
+      if (data.success && Array.isArray(data.students)) {
+        // REAL USERS ONLY: Filter out any legacy mock demo personas
+        const realStudents: Student[] = data.students.filter(
+          (s: Student) => !s.id.match(/^student-[1-6]$/)
+        );
+        setStudents(realStudents);
+        try {
+          localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(realStudents));
+        } catch (e) {}
       }
     } catch (err) {
       console.warn('Failed to refresh students from cloud:', err);
@@ -152,12 +111,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const savedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
       const savedIsAdmin = localStorage.getItem(STORAGE_KEYS.IS_ADMIN);
 
-      if (savedStudents) setStudents(JSON.parse(savedStudents));
+      if (savedStudents) {
+        try {
+          const parsed = JSON.parse(savedStudents);
+          const realOnly = Array.isArray(parsed)
+            ? parsed.filter((s: Student) => !s.id.match(/^student-[1-6]$/))
+            : [];
+          setStudents(realOnly);
+        } catch (e) {}
+      }
       if (savedProjects) setProjects(JSON.parse(savedProjects));
       if (savedEvents) setEvents(JSON.parse(savedEvents));
       if (savedRequests) setRequests(JSON.parse(savedRequests));
-      if (savedUserId) setCurrentUserId(savedUserId);
-      setIsAuthenticated(Boolean(savedToken || savedUserId));
+      if (savedUserId && !savedUserId.match(/^student-[1-6]$/)) {
+        setCurrentUserId(savedUserId);
+        setIsAuthenticated(Boolean(savedToken));
+      } else {
+        setCurrentUserId('');
+        setIsAuthenticated(false);
+      }
       setIsAdmin(savedIsAdmin === 'true');
     } catch (e) {
       console.warn('LocalStorage hydration error:', e);
@@ -222,13 +194,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
       localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, currentUserId);
+      if (currentUserId) {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, currentUserId);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+      }
     } catch (e) {
       console.warn('LocalStorage save error:', e);
     }
   }, [students, projects, events, requests, currentUserId, isHydrated]);
 
-  const currentUser = students.find((s) => s.id === currentUserId) || students[0];
+  const fallbackUser: Student = {
+    id: currentUserId || 'guest',
+    name: isAuthenticated ? 'Campus Member' : 'Guest Visitor',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+    college: 'Campus Network',
+    year: 'Student',
+    major: 'Computer Science',
+    primaryRole: 'Collaborator',
+    bio: '',
+    status: 'available',
+    skills: [],
+    projectCount: 0,
+    hackathonCount: 0,
+    email: '',
+    interests: [],
+    proofs: []
+  };
+
+  const currentUser: Student =
+    (isAuthenticated && currentUserId ? students.find((s) => s.id === currentUserId) : null) ||
+    fallbackUser;
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -373,7 +369,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {}
       }
 
-      showToast('Admin Access Granted 👑', 'success', 'Demo Persona Switcher is unlocked for you.');
+      showToast('Admin Access Granted 👑', 'success', 'Administrator control portal is unlocked.');
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Error connecting to admin auth service.' };
@@ -392,24 +388,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
       localStorage.removeItem('campuscollab_registered_credentials_v1');
     } catch (e) {}
-    setCurrentUserId('student-1');
+    setCurrentUserId('');
     showToast('Logged out safely', 'info', 'See you next time!');
-  };
-
-  const switchUser = (studentId: string) => {
-    if (!isAdmin) {
-      showToast('Admin Only Feature 🔒', 'error', 'Demo Persona Switcher is restricted to Administrator.');
-      return;
-    }
-    const target = students.find((s) => s.id === studentId);
-    if (target) {
-      setCurrentUserId(studentId);
-      setIsAuthenticated(true);
-      try {
-        localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, studentId);
-      } catch (e) {}
-      showToast(`Switched persona to ${target.name}`, 'info', target.primaryRole);
-    }
   };
 
   const updateUserStatus = (status: AvailabilityStatus, lookingForRole?: string) => {
@@ -724,6 +704,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         events,
         requests,
         isAuthenticated,
+        isHydrated,
         authModalOpen,
         setAuthModalOpen,
         authMode,
@@ -732,7 +713,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         signup,
         resetPassword,
         logout,
-        switchUser,
         updateUserStatus,
         updateUserProfile,
         createProject,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import CollabRequestModal from '@/components/CollabRequestModal';
 import { Student } from '@/types';
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function AIMatchingStudioPage() {
-  const { runSmartMatch } = useApp();
+  const { runSmartMatch, allStudents } = useApp();
 
   const defaultPrompt =
     "I'm building an AI-based expense tracker. I know Python but need someone for UI/UX and React.";
@@ -24,6 +24,12 @@ export default function AIMatchingStudioPage() {
   const [hasRun, setHasRun] = useState(true);
   const [matchData, setMatchData] = useState(() => runSmartMatch(defaultPrompt));
   const [selectedStudentForCollab, setSelectedStudentForCollab] = useState<Student | null>(null);
+
+  useEffect(() => {
+    if (promptText) {
+      setMatchData(runSmartMatch(promptText));
+    }
+  }, [allStudents]);
 
   const samplePrompts = [
     "I'm building an AI-based expense tracker. I know Python but need someone for UI/UX and React.",
@@ -264,6 +270,18 @@ export default function AIMatchingStudioPage() {
                 </div>
               ))}
             </div>
+
+            {matchData.matches.length === 0 && (
+              <div className="text-center py-12 bg-white border-[2.5px] border-black rounded-2xl p-8 shadow-[4px_4px_0px_0px_#000] space-y-3">
+                <div className="w-12 h-12 bg-[#FFDE59] border-2 border-black rounded-xl mx-auto flex items-center justify-center font-black text-xl shadow-[2px_2px_0px_0px_#000]">
+                  🔍
+                </div>
+                <h4 className="text-lg font-black uppercase text-black">No Collaborators Matched Yet</h4>
+                <p className="text-xs font-semibold text-stone-600 max-w-md mx-auto">
+                  Try refining your skill criteria or share the platform with campus peers to invite more classmates with matching skills.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

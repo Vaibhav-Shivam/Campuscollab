@@ -588,7 +588,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
           <form onSubmit={handleAdminSubmit} className="space-y-4">
             <div className="p-3 bg-[#FFDE59]/25 border-2 border-black rounded-xl text-xs font-bold text-black flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#38E54D] shrink-0" />
-              <span>Only authorized administrators may switch demo personas or manage platform settings.</span>
+              <span>Only authorized platform administrators may access this portal and manage platform settings.</span>
             </div>
 
             <div>

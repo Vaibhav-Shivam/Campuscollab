@@ -68,14 +68,21 @@ export default function StudentProfilePage() {
   useEffect(() => {
     if (!localStudent && studentId) {
       setIsLoading(true);
-      fetch(`/api/students?_t=${Date.now()}`)
+      fetch(`/api/students/${studentId}?_t=${Date.now()}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.success && Array.isArray(data.students)) {
-            const found = data.students.find((s: Student) => s.id === studentId);
-            if (found) {
-              setCloudStudent(found);
-            }
+          if (data.success && data.student) {
+            setCloudStudent(data.student);
+          } else {
+            // Fallback to query all
+            return fetch(`/api/students?_t=${Date.now()}`)
+              .then((r) => r.json())
+              .then((allData) => {
+                if (allData.success && Array.isArray(allData.students)) {
+                  const found = allData.students.find((s: Student) => s.id === studentId);
+                  if (found) setCloudStudent(found);
+                }
+              });
           }
         })
         .catch(() => {})

@@ -27,7 +27,6 @@ export default function AdminPage() {
     logout,
     allStudents,
     currentUser,
-    switchUser,
     projects,
     events,
     refreshStudents,
@@ -136,7 +135,7 @@ export default function AdminPage() {
             Administrator Control Portal
           </h1>
           <p className="text-xs sm:text-sm font-medium text-stone-600 mt-1 max-w-xl">
-            You have full authorization to manage platform state, inspect registered users, and switch between test demo personas.
+            You have full authorization to manage platform state, inspect registered members, review moderation reports, and supervise collaboration flows.
           </p>
         </div>
 
@@ -171,7 +170,7 @@ export default function AdminPage() {
           </div>
           <div>
             <div className="text-2xl font-black text-black">{allStudents.length}</div>
-            <div className="text-xs font-bold text-stone-600 uppercase tracking-wider">Total Active Creators</div>
+            <div className="text-xs font-bold text-stone-600 uppercase tracking-wider">Registered Real Students</div>
           </div>
         </div>
 
@@ -196,36 +195,39 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Demo Persona Switcher (Exclusive to Admin) */}
+      {/* Real Registered Members Directory */}
       <div className="bg-white border-3 border-black shadow-[6px_6px_0px_0px_#000] rounded-3xl p-6 sm:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b-2 border-black pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-[#9B87F5]" />
+              <Users className="w-5 h-5 text-[#9B87F5]" />
               <h2 className="text-xl font-black uppercase tracking-tight text-black">
-                Demo Persona Switcher (Exclusive Feature)
+                Registered Members Directory (Real Users Only)
               </h2>
             </div>
             <p className="text-xs font-medium text-stone-600 mt-0.5">
-              Switch into any demo student persona below to test views, permissions, and collaboration flows.
+              Live verified students registered in DynamoDB cloud storage. Zero demo personas.
             </p>
           </div>
           <span className="text-[10px] font-black uppercase bg-[#FAF8F5] border border-black px-2.5 py-1 rounded-lg self-start sm:self-auto">
-            Current: <strong className="text-black">{currentUser.name}</strong>
+            Total Members: <strong className="text-black">{allStudents.length}</strong>
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {allStudents.map((student) => {
-            const isSelected = student.id === currentUser.id;
-            return (
+        {allStudents.length === 0 ? (
+          <div className="text-center py-12 border-2 border-dashed border-black/30 rounded-2xl bg-stone-50">
+            <Users className="w-10 h-10 text-stone-400 mx-auto mb-2" />
+            <div className="text-sm font-black text-black">No Registered Members Yet</div>
+            <p className="text-xs text-stone-600 mt-1 max-w-sm mx-auto">
+              When students sign up on the site, their verified profiles will appear here instantly.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allStudents.map((student) => (
               <div
                 key={student.id}
-                className={`p-4 rounded-2xl border-2 border-black transition-all flex flex-col justify-between ${
-                  isSelected
-                    ? 'bg-[#FFDE59] shadow-[4px_4px_0px_0px_#000]'
-                    : 'bg-[#FAF8F5] hover:bg-white shadow-[2px_2px_0px_0px_#000]'
-                }`}
+                className="p-4 rounded-2xl border-2 border-black bg-[#FAF8F5] hover:bg-white shadow-[2px_2px_0px_0px_#000] transition-all flex flex-col justify-between"
               >
                 <div className="flex items-start gap-3">
                   <img
@@ -234,35 +236,36 @@ export default function AdminPage() {
                     className="w-12 h-12 rounded-xl object-cover border-2 border-black shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-black text-sm text-black truncate">{student.name}</span>
-                      {isSelected && (
-                        <CheckCircle2 className="w-4 h-4 text-black shrink-0" />
-                      )}
-                    </div>
+                    <span className="font-black text-sm text-black truncate block">{student.name}</span>
                     <div className="text-xs font-bold text-stone-600 truncate">{student.primaryRole}</div>
                     <div className="text-[10px] text-stone-500 truncate">{student.college}</div>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#38E54D]/20 text-[#1e832d] border border-[#38E54D]">
+                        {student.status === 'available' ? 'Available' : 'Looking for Team'}
+                      </span>
+                      {student.skills && student.skills.length > 0 && (
+                        <span className="text-[9px] font-bold text-stone-500">
+                          {student.skills.length} skills
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-black/20 flex items-center justify-between gap-2">
                   <span className="text-[10px] font-mono text-stone-500 truncate">{student.id}</span>
-                  <button
-                    onClick={() => switchUser(student.id)}
-                    disabled={isSelected}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border border-black cursor-pointer ${
-                      isSelected
-                        ? 'bg-black text-white cursor-default'
-                        : 'bg-white hover:bg-[#38E54D] text-black shadow-[1.5px_1.5px_0px_0px_#000]'
-                    }`}
+                  <Link
+                    href={`/students/${student.id}`}
+                    className="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border border-black bg-white hover:bg-[#38E54D] text-black shadow-[1.5px_1.5px_0px_0px_#000] flex items-center gap-1"
                   >
-                    {isSelected ? 'Active Now' : 'Switch To →'}
-                  </button>
+                    <span>View Profile</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

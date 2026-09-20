@@ -112,17 +112,17 @@ export default function HeroBotanical() {
                 <div className="p-5 space-y-4">
                   <div className="flex items-center gap-4">
                     <img
-                      src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400"
-                      alt="Priya Patel"
+                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400"
+                      alt="Verified Campus Collaborator"
                       className="w-16 h-16 rounded-xl object-cover border-2 border-black shadow-[3px_3px_0px_0px_#000]"
                     />
                     <div>
-                      <h3 className="font-black text-lg text-black uppercase">Priya Patel</h3>
+                      <h3 className="font-black text-lg text-black uppercase">Verified Collaborator</h3>
                       <p className="text-xs font-bold text-black bg-[#FFDE59] px-2 py-0.5 rounded-md border border-black inline-block mt-0.5">
                         React Developer & UI/UX
                       </p>
                       <p className="text-[11px] font-medium text-stone-600 mt-1">
-                        Institute of Tech · 3rd Year
+                        Campus Talent Network · Ready to Build
                       </p>
                     </div>
                   </div>
