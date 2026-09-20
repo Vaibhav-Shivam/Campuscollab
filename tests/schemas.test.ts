@@ -7,6 +7,7 @@ import {
   CreateEventSchema,
   LoginSchema,
   SignupSchema,
+  UpdateProfileSchema,
   validateBody
 } from '../src/lib/schemas';
 
@@ -89,5 +90,32 @@ describe('Strict Request Schema Validation (Audit Item #23)', () => {
       password: 'securepassword123'
     };
     expect(validateBody(SignupSchema, missingCollege).success).toBe(false);
+  });
+
+  it('validates and normalizes social & portfolio links in UpdateProfileSchema', () => {
+    const rawData = {
+      bio: 'Full-stack builder passionate about open source',
+      githubUrl: 'github.com/alexrivera',
+      portfolioUrl: 'https://alexrivera.dev',
+      linkedinUrl: 'linkedin.com/in/alexrivera',
+      figmaUrl: 'figma.com/@alexdesign'
+    };
+    const res = validateBody(UpdateProfileSchema, rawData);
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.githubUrl).toBe('https://github.com/alexrivera');
+      expect(res.data.portfolioUrl).toBe('https://alexrivera.dev');
+      expect(res.data.linkedinUrl).toBe('https://linkedin.com/in/alexrivera');
+      expect(res.data.figmaUrl).toBe('https://figma.com/@alexdesign');
+    }
+
+    // Allows empty string to clear a link
+    const clearRes = validateBody(UpdateProfileSchema, {
+      githubUrl: '',
+      portfolioUrl: '',
+      linkedinUrl: '',
+      figmaUrl: ''
+    });
+    expect(clearRes.success).toBe(true);
   });
 });

@@ -429,9 +429,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         id: currentUser.id
       };
 
-      setStudents((prev) =>
-        prev.map((s) => (s.id === currentUser.id ? mergedStudent : s))
-      );
+      setStudents((prev) => {
+        const exists = prev.some((s) => s.id === currentUser.id);
+        if (exists) {
+          return prev.map((s) => (s.id === currentUser.id ? mergedStudent : s));
+        }
+        return [mergedStudent, ...prev];
+      });
 
       showToast('Profile & Proofs Updated! ✨', 'success', 'Your portfolio links and proofs are now public.');
       return true;

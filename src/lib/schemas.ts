@@ -88,10 +88,66 @@ export const UpdateProfileSchema = z.object({
     .max(30)
     .optional(),
   interests: z.array(z.string().trim().max(50)).max(15).optional(),
-  portfolioUrl: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
-  githubUrl: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
-  linkedinUrl: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
-  figmaUrl: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
+  portfolioUrl: z
+    .string()
+    .trim()
+    .transform((val) => (val && !/^https?:\/\//i.test(val) ? `https://${val}` : val))
+    .refine((val) => {
+      if (!val) return true;
+      try {
+        const u = new URL(val);
+        return u.protocol === 'http:' || u.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }, { message: 'Must be a valid URL' })
+    .or(z.literal(''))
+    .optional(),
+  githubUrl: z
+    .string()
+    .trim()
+    .transform((val) => (val && !/^https?:\/\//i.test(val) ? `https://${val}` : val))
+    .refine((val) => {
+      if (!val) return true;
+      try {
+        const u = new URL(val);
+        return u.protocol === 'http:' || u.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }, { message: 'Must be a valid URL' })
+    .or(z.literal(''))
+    .optional(),
+  linkedinUrl: z
+    .string()
+    .trim()
+    .transform((val) => (val && !/^https?:\/\//i.test(val) ? `https://${val}` : val))
+    .refine((val) => {
+      if (!val) return true;
+      try {
+        const u = new URL(val);
+        return u.protocol === 'http:' || u.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }, { message: 'Must be a valid URL' })
+    .or(z.literal(''))
+    .optional(),
+  figmaUrl: z
+    .string()
+    .trim()
+    .transform((val) => (val && !/^https?:\/\//i.test(val) ? `https://${val}` : val))
+    .refine((val) => {
+      if (!val) return true;
+      try {
+        const u = new URL(val);
+        return u.protocol === 'http:' || u.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }, { message: 'Must be a valid URL' })
+    .or(z.literal(''))
+    .optional(),
   avatar: z.string().trim().optional(),
   proofs: z
     .array(

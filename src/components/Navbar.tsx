@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { PlusCircle, Bell, ChevronDown, Menu, X, ArrowUpRight, LogIn, UserPlus, LogOut, Shield } from 'lucide-react';
+import { PlusCircle, Bell, ChevronDown, Menu, X, ArrowUpRight, LogIn, UserPlus, LogOut, Shield, Edit3 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
+import EditProfileModal from './EditProfileModal';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -20,6 +21,7 @@ export default function Navbar() {
   } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   const pendingRequests = requests.filter(
     (r) => r.receiverId === currentUser.id && r.status === 'pending'
@@ -36,7 +38,8 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-[#FAF8F5] border-b-[2.5px] border-black shadow-[0_2px_0px_0px_#000]">
+    <>
+      <header className="sticky top-0 z-50 bg-[#FAF8F5] border-b-[2.5px] border-black shadow-[0_2px_0px_0px_#000]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Brand Logo (Neo-Brutalist Gumroad Style) */}
@@ -157,6 +160,18 @@ export default function Navbar() {
                       </div>
 
                       <div className="border-t-2 border-black mt-2 pt-2 px-3 space-y-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            setEditProfileOpen(true);
+                          }}
+                          className="w-full flex items-center justify-center gap-1.5 text-center text-xs text-black font-black py-2 rounded-xl bg-[#FFDE59] border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ffe373] cursor-pointer transition-all"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          Edit Profile & Links
+                        </button>
+
                         <Link
                           href={`/students/${currentUser.id}`}
                           onClick={() => setUserMenuOpen(false)}
@@ -249,13 +264,25 @@ export default function Navbar() {
                   <div className="text-[11px] font-bold text-stone-500 truncate max-w-[170px]">{currentUser.college}</div>
                 </div>
               </div>
-              <Link
-                href="/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-[11px] font-black uppercase bg-[#FFDE59] px-2.5 py-1 rounded-lg border border-black shadow-[1px_1px_0px_0px_#000]"
-              >
-                Dashboard
-              </Link>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setEditProfileOpen(true);
+                  }}
+                  className="text-[11px] font-black uppercase bg-[#4FD1C5] hover:bg-[#38E54D] text-black px-2.5 py-1 rounded-lg border border-black shadow-[1px_1px_0px_0px_#000] cursor-pointer"
+                >
+                  Edit ✏️
+                </button>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-[11px] font-black uppercase bg-[#FFDE59] px-2.5 py-1 rounded-lg border border-black shadow-[1px_1px_0px_0px_#000]"
+                >
+                  Dashboard
+                </Link>
+              </div>
             </div>
           )}
 
@@ -346,5 +373,14 @@ export default function Navbar() {
         </div>
       )}
     </header>
+
+      {isAuthenticated && (
+        <EditProfileModal
+          isOpen={editProfileOpen}
+          onClose={() => setEditProfileOpen(false)}
+          student={currentUser}
+        />
+      )}
+    </>
   );
 }

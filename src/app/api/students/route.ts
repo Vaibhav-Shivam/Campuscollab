@@ -198,7 +198,11 @@ export async function PUT(request: Request) {
       projectCount: existing?.projectCount || 0,
       hackathonCount: existing?.hackathonCount || 0,
       interests: updates.interests || existing?.interests || ['Tech'],
-      proofs: updates.proofs || existing?.proofs || []
+      proofs: updates.proofs || existing?.proofs || [],
+      githubUrl: updates.githubUrl !== undefined ? (updates.githubUrl || undefined) : existing?.githubUrl,
+      portfolioUrl: updates.portfolioUrl !== undefined ? (updates.portfolioUrl || undefined) : existing?.portfolioUrl,
+      linkedinUrl: updates.linkedinUrl !== undefined ? (updates.linkedinUrl || undefined) : existing?.linkedinUrl,
+      figmaUrl: updates.figmaUrl !== undefined ? (updates.figmaUrl || undefined) : existing?.figmaUrl
     };
 
     const saved = await saveStudentToDB(updatedStudent);

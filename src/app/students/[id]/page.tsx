@@ -91,6 +91,12 @@ export default function StudentProfilePage() {
     }
   }, [localStudent, studentId]);
 
+  useEffect(() => {
+    if (localStudent) {
+      setCloudStudent(localStudent);
+    }
+  }, [localStudent]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4">
@@ -125,7 +131,13 @@ export default function StudentProfilePage() {
     );
   }
 
-  const isSelf = student.id === currentUser.id;
+  const isSelf =
+    Boolean(currentUser?.id && student?.id && student.id === currentUser.id) ||
+    Boolean(
+      currentUser?.email &&
+        student?.email &&
+        currentUser.email.toLowerCase() === student.email.toLowerCase()
+    );
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] py-10 md:py-16">
