@@ -4,6 +4,7 @@ import { Student } from '@/types';
 import { inferSkillCategory } from '@/lib/categorize';
 import { hashPassword, signJWT, SESSION_COOKIE_NAME, isUserAdmin } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { SignupSchema, validateBody } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,32 +19,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
+    const rawBody = await request.json();
+    const validation = validateBody(SignupSchema, rawBody);
+    if (!validation.success) {
+      return NextResponse.json(
+        { success: false, error: validation.error, details: validation.issues },
+        { status: 400 }
+      );
+    }
+    const body = validation.data;
     const { name, email, password, college, major, year, primaryRole, skills } = body;
 
-    if (!name || !email || !password || !college) {
-      return NextResponse.json(
-        { success: false, error: 'Name, email, password, and college are required.' },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { success: false, error: 'Password must be at least 6 characters long.' },
-        { status: 400 }
-      );
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { success: false, error: 'Please provide a valid email address.' },
-        { status: 400 }
-      );
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = email.toLowerCase();
 
     // Check if email already registered
     const existing = await findStudentByEmail(normalizedEmail);
@@ -54,7 +41,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const studentId = `student-${Date.now()}`;
+    const studentId = crypto.randomUUID();
     // Modern scrypt salted password hash
     const passwordHash = hashPassword(password);
 

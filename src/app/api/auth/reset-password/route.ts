@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { findStudentByEmail, getUserAuth, updateUserPassword } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { ResetPasswordSchema, validateBody } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,24 +17,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { email, newPassword } = body;
-
-    if (!email || !newPassword) {
+    const rawBody = await request.json();
+    const validation = validateBody(ResetPasswordSchema, rawBody);
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: 'Email and new password are required.' },
+        { success: false, error: validation.error, details: validation.issues },
         { status: 400 }
       );
     }
-
-    if (newPassword.length < 6) {
-      return NextResponse.json(
-        { success: false, error: 'New password must be at least 6 characters long.' },
-        { status: 400 }
-      );
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
+    const { email, newPassword } = validation.data;
+    const normalizedEmail = email.toLowerCase();
 
     // Check if account exists
     const [student, auth] = await Promise.all([

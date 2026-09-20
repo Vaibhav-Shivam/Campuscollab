@@ -36,6 +36,14 @@ export interface Student {
   proofs: ProjectProof[];
 }
 
+export interface ProjectMember {
+  userId: string;
+  name: string;
+  avatar?: string;
+  role: string;
+  joinedAt: string;
+}
+
 export interface ProjectComment {
   id: string;
   authorId: string;
@@ -65,6 +73,9 @@ export interface Project {
   likesCount: number;
   comments: ProjectComment[];
   tags: string[];
+  members?: ProjectMember[];
+  status?: 'open' | 'closed' | 'completed' | 'archived';
+  rolesNeeded?: string[];
 }
 
 export interface CollaborationRequest {
@@ -78,9 +89,11 @@ export interface CollaborationRequest {
   projectId: string;
   projectTitle: string;
   message: string;
-  status: 'pending' | 'accepted' | 'declined';
+  status: 'pending' | 'accepted' | 'declined' | 'withdrawn';
   createdAt: string;
   contactEmail?: string;
+  requestedRole?: string;
+  respondedAt?: string;
 }
 
 export interface CampusEvent {
@@ -101,6 +114,13 @@ export interface CampusEvent {
 export interface AIMatchResult {
   student: Student;
   matchScore: number;
+  confidenceTier?: 'Strong Match' | 'Good Match' | 'Potential Fit';
+  scoreBreakdown?: {
+    skillFit: number;
+    roleFit: number;
+    availabilityFit: number;
+    projectProofFit: number;
+  };
   matchedSkills: string[];
   missingSkills: string[];
   reasons: string[];

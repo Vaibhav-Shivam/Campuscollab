@@ -45,6 +45,8 @@ export async function GET(request: Request) {
   }
 }
 
+import { CreateProjectSchema, validateBody } from '@/lib/schemas';
+
 export async function POST(request: Request) {
   try {
     const session = getSessionFromRequest(request);
@@ -55,39 +57,52 @@ export async function POST(request: Request) {
       }, { status: 401 });
     }
 
-    const body = await request.json();
-
-    if (!body.title || !body.description || typeof body.title !== 'string' || typeof body.description !== 'string') {
-      return NextResponse.json({
-        success: false,
-        error: 'Valid title and description are required'
-      }, { status: 400 });
+    const rawBody = await request.json();
+    const validation = validateBody(CreateProjectSchema, rawBody);
+    if (!validation.success) {
+      return NextResponse.json(
+        { success: false, error: validation.error, details: validation.issues },
+        { status: 400 }
+      );
     }
+    const body = validation.data;
 
     // Server-verified identity: use authenticated session strictly
     const ownerId = session.userId;
     const ownerName = session.name || 'Project Lead';
     const ownerCollege = session.college || 'Campus';
-    const ownerAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(ownerId)}`;
+    const ownerAvatar = body.ownerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(ownerId)}`;
+    const nowIso = new Date().toISOString();
 
     const newProject: Project = {
-      id: body.id || `project-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      title: body.title.trim(),
-      tagline: (body.tagline || body.title).trim(),
-      description: body.description.trim(),
+      id: body.id || crypto.randomUUID(),
+      title: body.title,
+      tagline: body.tagline || body.title,
+      description: body.description,
       type: body.type || 'Hackathon',
       ownerId,
       ownerName,
-      ownerAvatar: body.ownerAvatar || ownerAvatar,
+      ownerAvatar,
       ownerCollege,
-      createdAt: new Date().toISOString(),
-      requiredSkills: Array.isArray(body.requiredSkills) ? body.requiredSkills : [],
-      currentMembers: Math.max(1, Number(body.currentMembers) || 1),
-      maxMembers: Math.max(1, Number(body.maxMembers) || 4),
-      isOpen: body.isOpen !== undefined ? Boolean(body.isOpen) : true,
+      createdAt: nowIso,
+      requiredSkills: body.requiredSkills,
+      currentMembers: 1,
+      maxMembers: body.maxMembers ?? 4,
+      isOpen: body.isOpen !== false,
+      status: body.isOpen !== false ? 'open' : 'closed',
       likesCount: 0,
       comments: [],
-      tags: Array.isArray(body.tags) ? body.tags : []
+      tags: body.tags || [],
+      rolesNeeded: body.rolesNeeded || [],
+      members: [
+        {
+          userId: ownerId,
+          name: ownerName,
+          avatar: ownerAvatar,
+          role: 'Owner / Lead',
+          joinedAt: nowIso
+        }
+      ]
     };
 
     const saved = await saveProjectToDB(newProject);
@@ -97,9 +112,9 @@ export async function POST(request: Request) {
       persistedToDynamoDB: saved,
       project: newProject
     }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: 'Invalid payload' },
+      { success: false, error: error.message || 'Invalid payload' },
       { status: 400 }
     );
   }

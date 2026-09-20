@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Project } from '@/types';
-import { Users, MessageSquare, Heart, ArrowUpRight, Sparkles } from 'lucide-react';
+import { Users, Tag, Heart, MessageSquare, ArrowUpRight, ShieldCheck } from 'lucide-react';
+import { formatTimeAgo } from '@/lib/utils';
 
 interface ProjectCardProps {
   project: Project;
@@ -51,7 +52,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 {project.ownerName}
               </div>
               <div className="text-[11px] text-stone-600 truncate font-medium">
-                {project.ownerCollege} · {project.createdAt}
+                {project.ownerCollege} · {formatTimeAgo(project.createdAt)}
               </div>
             </div>
           </div>

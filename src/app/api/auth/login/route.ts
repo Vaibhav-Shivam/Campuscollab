@@ -4,22 +4,23 @@ import { Student } from '@/types';
 import { verifyPassword, hashPassword, needsPasswordRehash, signJWT, SESSION_COOKIE_NAME, isUserAdmin } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
+import { LoginSchema, validateBody } from '@/lib/schemas';
+
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
     const clientIp = getClientIp(request);
-    const body = await request.json();
-    const { email, password } = body;
-
-    if (!email || !password) {
+    const rawBody = await request.json();
+    const validation = validateBody(LoginSchema, rawBody);
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: 'Email and password are required.' },
+        { success: false, error: validation.error, details: validation.issues },
         { status: 400 }
       );
     }
-
-    const normalizedEmail = email.trim().toLowerCase();
+    const { email, password } = validation.data;
+    const normalizedEmail = email.toLowerCase();
 
     const rateCheck = checkRateLimit(`login:${clientIp}:${normalizedEmail}`, 10, 60);
     if (!rateCheck.success) {

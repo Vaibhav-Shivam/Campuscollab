@@ -1,25 +1,96 @@
 import { NextResponse } from 'next/server';
 import { fetchStudentsFromDB } from '@/lib/db';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { Student } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
-const CANONICAL_SKILLS = [
-  'python', 'react', 'next.js', 'typescript', 'javascript', 'ui/ux', 'figma',
-  'machine learning', 'ai', 'deep learning', 'pytorch', 'tensorflow',
-  'fastapi', 'tailwind css', 'node.js', 'express', 'aws', 'docker', 'kubernetes',
-  'postgresql', 'mongodb', 'graphql', 'flutter', 'react native', 'solidity',
-  'web3', 'cybersecurity', 'video editing', 'motion design', 'rust', 'go', 'c++'
-];
-
-const ROLE_KEYWORDS: Record<string, string[]> = {
-  'Frontend Developer': ['frontend', 'react', 'next.js', 'ui', 'css', 'tailwind', 'vue', 'web design'],
-  'Backend Developer': ['backend', 'api', 'server', 'database', 'node', 'fastapi', 'python', 'sql', 'microservices'],
-  'Full Stack Developer': ['fullstack', 'full stack', 'mern', 'next.js', 'end-to-end', 'full-stack'],
-  'UI/UX Designer': ['design', 'figma', 'ui/ux', 'prototype', 'user experience', 'wireframe'],
-  'AI / ML Engineer': ['machine learning', 'ai', 'data science', 'deep learning', 'model', 'llm', 'nlp', 'pytorch'],
-  'Mobile App Developer': ['mobile', 'flutter', 'react native', 'android', 'ios', 'swift', 'kotlin']
+/**
+ * Canonical Skill Aliases and Normalization Mapping
+ * Translates various natural language mentions, abbreviations, and informal terms into canonical skill names.
+ */
+const SKILL_SYNONYMS: Record<string, string[]> = {
+  'React': ['react', 'reactjs', 'react.js', 'react frontend'],
+  'Next.js': ['next', 'nextjs', 'next.js', 'next 14', 'next 15', 'next 16'],
+  'TypeScript': ['ts', 'typescript', 'type script'],
+  'JavaScript': ['js', 'javascript', 'es6', 'vanilla js'],
+  'Node.js': ['node', 'nodejs', 'node.js', 'express', 'express.js'],
+  'Python': ['python', 'python3', 'py', 'django', 'flask', 'fastapi'],
+  'Tailwind CSS': ['tailwind', 'tailwindcss', 'tailwind css', 'tailwind 4'],
+  'UI/UX Design': ['ui/ux', 'ui', 'ux', 'figma', 'wireframe', 'prototyping', 'product design', 'user experience'],
+  'Machine Learning / AI': ['machine learning', 'ml', 'ai', 'deep learning', 'pytorch', 'tensorflow', 'llm', 'nlp'],
+  'PostgreSQL / SQL': ['postgres', 'postgresql', 'sql', 'mysql', 'prisma', 'relational database'],
+  'MongoDB / NoSQL': ['mongodb', 'mongo', 'nosql', 'mongoose'],
+  'Docker & DevOps': ['docker', 'kubernetes', 'k8s', 'ci/cd', 'devops', 'aws', 'cloud'],
+  'Flutter / Mobile': ['flutter', 'dart', 'react native', 'rn', 'ios', 'android', 'swift', 'kotlin'],
+  'Web3 / Solidity': ['web3', 'solidity', 'smart contracts', 'ethereum', 'crypto', 'blockchain'],
+  'Rust / Systems': ['rust', 'c++', 'cplusplus', 'golang', 'go']
 };
+
+const ROLE_PATTERNS: Record<string, string[]> = {
+  'Frontend Developer': ['frontend', 'front-end', 'ui developer', 'web design', 'client-side'],
+  'Backend Developer': ['backend', 'back-end', 'api', 'server', 'database', 'microservices'],
+  'Full Stack Developer': ['fullstack', 'full stack', 'full-stack', 'end-to-end', 'mern'],
+  'UI/UX Designer': ['designer', 'ui/ux designer', 'product designer', 'figma designer'],
+  'AI / ML Engineer': ['ai engineer', 'ml engineer', 'data scientist', 'machine learning engineer'],
+  'Mobile Developer': ['mobile developer', 'app developer', 'flutter developer', 'ios developer', 'android developer']
+};
+
+/**
+ * Normalizes input text and extracts canonical skills
+ */
+function extractSkills(prompt: string): string[] {
+  const lower = prompt.toLowerCase();
+  const extracted: string[] = [];
+
+  for (const [canonical, keywords] of Object.entries(SKILL_SYNONYMS)) {
+    if (keywords.some((k) => lower.includes(k))) {
+      extracted.push(canonical);
+    }
+  }
+
+  return extracted;
+}
+
+/**
+ * Extracts target roles from project prompt
+ */
+function extractRoles(prompt: string): string[] {
+  const lower = prompt.toLowerCase();
+  const extracted: string[] = [];
+
+  for (const [role, keywords] of Object.entries(ROLE_PATTERNS)) {
+    if (keywords.some((k) => lower.includes(k))) {
+      extracted.push(role);
+    }
+  }
+
+  return extracted;
+}
+
+/**
+ * Normalizes student skills to canonical forms for symmetric matching
+ */
+function normalizeStudentSkills(skills: any[]): string[] {
+  const normalized: Set<string> = new Set();
+  const rawSkillNames = skills.map((s) => (typeof s === 'string' ? s : s?.name || '').toLowerCase());
+
+  for (const raw of rawSkillNames) {
+    let matchedCanonical = false;
+    for (const [canonical, aliases] of Object.entries(SKILL_SYNONYMS)) {
+      if (aliases.some((alias) => raw.includes(alias) || alias.includes(raw))) {
+        normalized.add(canonical);
+        matchedCanonical = true;
+        break;
+      }
+    }
+    if (!matchedCanonical && raw.length > 0) {
+      normalized.add(raw);
+    }
+  }
+
+  return Array.from(normalized);
+}
 
 export async function POST(request: Request) {
   try {
@@ -36,78 +107,89 @@ export async function POST(request: Request) {
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Project description prompt is required' },
+        { success: false, error: 'Project description or requirements prompt is required.' },
         { status: 400 }
       );
     }
 
-    const lower = prompt.toLowerCase();
+    // 1. Semantic Skill & Role Extraction
+    const detectedSkills = extractSkills(prompt);
+    const targetSkills = detectedSkills.length > 0 ? detectedSkills : ['React', 'UI/UX Design', 'Node.js'];
+    const detectedRoles = extractRoles(prompt);
 
-    // 1. Skill Extraction
-    const detectedNeeded = CANONICAL_SKILLS.filter((s) => lower.includes(s));
-    const targetSkills = detectedNeeded.length > 0 ? detectedNeeded : ['react', 'ui/ux', 'figma'];
-
-    // 2. Role Extraction
-    const detectedRoles: string[] = [];
-    for (const [role, keywords] of Object.entries(ROLE_KEYWORDS)) {
-      if (keywords.some((k) => lower.includes(k))) {
-        detectedRoles.push(role);
-      }
-    }
-
-    // 3. Candidate Retrieval from Live Database
+    // 2. Candidate Retrieval from Live Database (Real Registered Students Only)
     const { students } = await fetchStudentsFromDB();
 
-    // 4. Semantic Ranking & Explanation Generation
-    const ranked = students
-      .map((student) => {
-        const studentSkillNames = (student.skills || []).map((sk) =>
-          (typeof sk === 'string' ? sk : sk?.name || '').toLowerCase()
+    // 3. Transparent Heuristic Scoring (Audit Item #21)
+    const matches = students
+      .map((student: Student) => {
+        const studentCanonicalSkills = normalizeStudentSkills(student.skills || []);
+
+        // Skill overlap
+        const matchedSkills = targetSkills.filter((req) =>
+          studentCanonicalSkills.some(
+            (sk) => sk.toLowerCase() === req.toLowerCase() || sk.toLowerCase().includes(req.toLowerCase())
+          )
         );
+        const missingSkills = targetSkills.filter((req) => !matchedSkills.includes(req));
 
-        const matched = targetSkills.filter((req) =>
-          studentSkillNames.some((sk) => sk.includes(req) || req.includes(sk))
-        );
-
-        const missing = targetSkills.filter((req) => !matched.includes(req));
-
+        // Role alignment
         const roleMatch = detectedRoles.some((r) =>
           (student.primaryRole || '').toLowerCase().includes(r.toLowerCase())
         );
 
-        // Scoring signals
-        const skillRatio = targetSkills.length > 0 ? (matched.length / targetSkills.length) * 55 : 20;
-        const roleBonus = roleMatch ? 15 : 0;
-        const availBonus = student.status === 'available' ? 20 : 5;
-        const proofBonus = Math.min((student.proofs?.length || 0) * 5, 10);
-        const totalScore = Math.min(99, Math.round(skillRatio + roleBonus + availBonus + proofBonus));
+        // Score Breakdown (0-100 total)
+        // Skill Fit (0-50 pts): Proportional to matched required skills
+        const skillRatio = targetSkills.length > 0 ? matchedSkills.length / targetSkills.length : 0.5;
+        const skillFit = Math.round(skillRatio * 50);
 
-        // Generate explainable match insights
+        // Role Fit (0-20 pts): Direct target role match
+        const roleFit = roleMatch ? 20 : (detectedRoles.length === 0 ? 10 : 0);
+
+        // Availability Fit (0-15 pts): Actively available for collaboration
+        const availabilityFit = student.status === 'available' ? 15 : 5;
+
+        // Project Proofs Fit (0-15 pts): Demonstrable portfolio evidence
+        const proofCount = student.proofs?.length || 0;
+        const projectProofFit = Math.min(15, proofCount * 5);
+
+        const totalScore = Math.min(99, skillFit + roleFit + availabilityFit + projectProofFit);
+
+        // Categorize into honest confidence tiers (Audit Item #21)
+        let confidenceTier: 'Strong Match' | 'Good Match' | 'Potential Fit' = 'Potential Fit';
+        if (totalScore >= 75) {
+          confidenceTier = 'Strong Match';
+        } else if (totalScore >= 50) {
+          confidenceTier = 'Good Match';
+        }
+
+        // Transparent explanation factors
         const reasons: string[] = [];
-        if (matched.length > 0) {
-          reasons.push(`✓ Skilled in ${matched.slice(0, 3).join(', ')}`);
+        if (matchedSkills.length > 0) {
+          reasons.push(`✓ Skills: Matched ${matchedSkills.slice(0, 3).join(', ')}`);
         }
         if (roleMatch) {
-          reasons.push(`✓ Matches target role (${student.primaryRole})`);
+          reasons.push(`✓ Role: Aligns with ${student.primaryRole}`);
         }
         if (student.status === 'available') {
-          reasons.push('✓ Available for new projects');
+          reasons.push('✓ Availability: Actively available for new collaborations');
         }
-        if ((student.proofs?.length || 0) > 0) {
-          reasons.push(`✓ Has ${student.proofs.length} verified project proof${student.proofs.length > 1 ? 's' : ''}`);
+        if (proofCount > 0) {
+          reasons.push(`✓ Portfolio: ${proofCount} verified project proof${proofCount > 1 ? 's' : ''}`);
         }
 
         return {
-          studentId: student.id,
-          name: student.name,
-          role: student.primaryRole,
-          college: student.college,
-          avatar: student.avatar,
+          student,
           matchScore: totalScore,
-          matchedSkills: matched,
-          missingSkills: missing,
-          availability: student.status,
-          proofCount: student.proofs?.length || 0,
+          confidenceTier,
+          scoreBreakdown: {
+            skillFit,
+            roleFit,
+            availabilityFit,
+            projectProofFit
+          },
+          matchedSkills,
+          missingSkills,
           reasons
         };
       })
@@ -116,17 +198,17 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      service: 'CampusCollab Semantic Teammate Matcher v2',
+      service: 'CampusCollab Semantic Teammate Matcher',
       inputPrompt: prompt,
       extractedRequirements: {
         skills: targetSkills,
         targetRoles: detectedRoles
       },
-      topMatches: ranked
+      topMatches: matches
     });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: 'Failed to process matching request' },
+      { success: false, error: error.message || 'Failed to process matching query' },
       { status: 500 }
     );
   }

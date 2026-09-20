@@ -3,6 +3,7 @@ import { addProjectCommentToDB, getStudentById } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth';
 import { ProjectComment } from '@/types';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { CreateCommentSchema, validateBody } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,22 +38,15 @@ export async function POST(
       );
     }
 
-    const body = await request.json();
-    const { content, offeringSkills } = body;
-
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+    const rawBody = await request.json();
+    const validation = validateBody(CreateCommentSchema, rawBody);
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: 'Comment content cannot be empty' },
+        { success: false, error: validation.error, details: validation.issues },
         { status: 400 }
       );
     }
-
-    if (content.length > 1500) {
-      return NextResponse.json(
-        { success: false, error: 'Comment cannot exceed 1500 characters' },
-        { status: 400 }
-      );
-    }
+    const { content, offeringSkills } = validation.data;
 
     // Determine author strictly from verified session and student database profile
     const student = await getStudentById(session.userId);
@@ -62,14 +56,14 @@ export async function POST(
     const authorRole = student?.primaryRole || 'Developer';
 
     const newComment: ProjectComment = {
-      id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: crypto.randomUUID(),
       authorId,
       authorName,
       authorAvatar,
       authorRole,
-      content: content.trim(),
+      content,
       createdAt: new Date().toISOString(),
-      offeringSkills: Array.isArray(offeringSkills) && offeringSkills.length > 0 ? offeringSkills : undefined
+      offeringSkills: offeringSkills && offeringSkills.length > 0 ? offeringSkills : undefined
     };
 
     const saved = await addProjectCommentToDB(projectId, newComment);

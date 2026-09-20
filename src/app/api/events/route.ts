@@ -25,6 +25,8 @@ export async function GET() {
   }
 }
 
+import { CreateEventSchema, validateBody } from '@/lib/schemas';
+
 export async function POST(request: Request) {
   try {
     const session = getSessionFromRequest(request);
@@ -35,30 +37,30 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { title, description, category, date, location, isOnline, skillsFocus, image } = body;
-
-    if (!title || !description || typeof title !== 'string' || typeof description !== 'string') {
+    const rawBody = await request.json();
+    const validation = validateBody(CreateEventSchema, rawBody);
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: 'Event title and description are required.' },
+        { success: false, error: validation.error, details: validation.issues },
         { status: 400 }
       );
     }
+    const body = validation.data;
 
     const newEvent = {
-      id: `event-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      title: title.trim(),
-      description: description.trim(),
-      category: category || 'Workshop',
-      date: date || 'Upcoming',
-      location: location || 'Campus Main Hall',
-      isOnline: Boolean(isOnline),
-      organizer: session.name || 'Campus Community',
+      id: crypto.randomUUID(),
+      title: body.title,
+      description: body.description,
+      category: body.category,
+      date: body.date,
+      location: body.location,
+      isOnline: body.isOnline,
+      organizer: body.organizer || session.name || 'Campus Community',
       organizerId: session.userId,
       attendeesCount: 0,
       isRegistered: false,
-      image: image || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=600',
-      skillsFocus: Array.isArray(skillsFocus) ? skillsFocus : [],
+      image: body.image || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=600',
+      skillsFocus: body.skillsFocus,
       createdAt: new Date().toISOString()
     };
 

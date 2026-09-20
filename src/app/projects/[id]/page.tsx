@@ -16,6 +16,7 @@ import {
   CheckCircle,
   ArrowUpRight
 } from 'lucide-react';
+import { formatTimeAgo } from '@/lib/utils';
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -118,7 +119,7 @@ export default function ProjectDetailsPage() {
                   {project.ownerName}
                 </div>
                 <div className="text-xs text-stone-600 font-bold">
-                  {project.ownerCollege} · Posted {project.createdAt}
+                  {project.ownerCollege} · Posted {formatTimeAgo(project.createdAt)}
                 </div>
               </div>
             </div>
@@ -173,6 +174,37 @@ export default function ProjectDetailsPage() {
             </div>
           </div>
 
+          {/* Team Members Roster (Audit Item #18 & #19) */}
+          {project.members && project.members.length > 0 && (
+            <div className="pt-4 border-t-2 border-black">
+              <div className="text-[10px] font-black uppercase tracking-wider text-black mb-3 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" /> Team Roster ({project.members.length} / {project.maxMembers})
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {project.members.map((member) => (
+                  <div
+                    key={member.userId}
+                    className="flex items-center gap-2.5 bg-[#FAF8F5] border-2 border-black p-2.5 rounded-xl shadow-[2px_2px_0px_0px_#000]"
+                  >
+                    <img
+                      src={member.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(member.userId)}`}
+                      alt={member.name}
+                      className="w-9 h-9 rounded-lg border-1.5 border-black object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-black text-black truncate uppercase">
+                        {member.name}
+                      </div>
+                      <div className="text-[10px] font-bold text-stone-600 truncate">
+                        {member.role}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Team Capacity Progress Bar */}
           <div className="bg-[#FAF8F5] rounded-xl p-5 border-2 border-black shadow-[3px_3px_0px_0px_#000] flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -184,12 +216,12 @@ export default function ProjectDetailsPage() {
                   Team Slots: {project.currentMembers} of {project.maxMembers} Filled
                 </div>
                 <div className="text-[11px] font-bold text-stone-600">
-                  {project.maxMembers - project.currentMembers} collaborator spot(s) remaining
+                  {Math.max(0, project.maxMembers - project.currentMembers)} collaborator spot(s) remaining
                 </div>
               </div>
             </div>
 
-            {!isOwner && ownerStudent && (
+            {!isOwner && ownerStudent && project.isOpen !== false && (project.currentMembers < project.maxMembers) && (
               <button
                 onClick={() => setShowCollabModal(true)}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-black hover:bg-[#FF70A6] hover:text-black text-white font-black text-xs uppercase tracking-wider px-6 py-3 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
@@ -295,7 +327,7 @@ export default function ProjectDetailsPage() {
                           {cmt.authorName}
                         </div>
                         <div className="text-[11px] text-stone-600 font-bold">
-                          {cmt.authorRole} · {cmt.createdAt}
+                          {cmt.authorRole} · {formatTimeAgo(cmt.createdAt)}
                         </div>
                       </div>
                     </div>

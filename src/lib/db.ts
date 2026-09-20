@@ -491,32 +491,61 @@ export async function fetchProjectsFromDB(): Promise<{ projects: Project[]; sour
       const response = await client.send(command);
       const items = (response.Items || []).filter((it) => (it.pk as string)?.startsWith('PROJECT#'));
 
-      dbProjects = items.map((it) => ({
-        id: it.id || (it.pk as string).replace('PROJECT#', ''),
-        title: it.title || 'Untitled Project',
-        tagline: it.tagline || 'Student collaboration project',
-        description: it.description || '',
-        type: it.type || 'Personal',
-        ownerId: it.ownerId || 'student-admin',
-        ownerName: it.ownerName || 'Campus Builder',
-        ownerAvatar: it.ownerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(it.ownerId || 'admin')}`,
-        ownerCollege: it.ownerCollege || 'Engineering Institute',
-        createdAt: it.createdAt || new Date().toISOString(),
-        requiredSkills: Array.isArray(it.requiredSkills) ? it.requiredSkills : [],
-        currentMembers: it.currentMembers || 1,
-        maxMembers: it.maxMembers || 4,
-        isOpen: it.isOpen !== undefined ? it.isOpen : true,
-        likesCount: it.likesCount || 0,
-        tags: Array.isArray(it.tags) ? it.tags : [],
-        comments: Array.isArray(it.comments) ? it.comments : []
-      }));
+      dbProjects = items.map((it) => {
+        const ownerId = it.ownerId || 'student-admin';
+        const ownerName = it.ownerName || 'Campus Builder';
+        const ownerAvatar = it.ownerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(ownerId)}`;
+        const createdAt = it.createdAt || new Date().toISOString();
+        const members = Array.isArray(it.members) && it.members.length > 0
+          ? it.members
+          : [{ userId: ownerId, name: ownerName, avatar: ownerAvatar, role: 'Owner / Lead', joinedAt: createdAt }];
+
+        return {
+          id: it.id || (it.pk as string).replace('PROJECT#', ''),
+          title: it.title || 'Untitled Project',
+          tagline: it.tagline || 'Student collaboration project',
+          description: it.description || '',
+          type: it.type || 'Personal',
+          ownerId,
+          ownerName,
+          ownerAvatar,
+          ownerCollege: it.ownerCollege || 'Engineering Institute',
+          createdAt,
+          requiredSkills: Array.isArray(it.requiredSkills) ? it.requiredSkills : [],
+          currentMembers: members.length,
+          maxMembers: it.maxMembers || 4,
+          isOpen: it.isOpen !== undefined ? it.isOpen : true,
+          status: it.status || (it.isOpen === false ? 'closed' : 'open'),
+          likesCount: it.likesCount || 0,
+          tags: Array.isArray(it.tags) ? it.tags : [],
+          comments: Array.isArray(it.comments) ? it.comments : [],
+          members,
+          rolesNeeded: Array.isArray(it.rolesNeeded) ? it.rolesNeeded : []
+        };
+      });
     } catch (error) {
       console.warn('[DB] Error scanning projects from DynamoDB:', error);
     }
   }
 
   const projectMap = new Map<string, Project>();
-  localProjects.forEach((p) => projectMap.set(p.id, p));
+  localProjects.forEach((p) => {
+    const ownerId = p.ownerId || 'student-admin';
+    const ownerName = p.ownerName || 'Campus Builder';
+    const ownerAvatar = p.ownerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(ownerId)}`;
+    const createdAt = p.createdAt || new Date().toISOString();
+    const members = Array.isArray(p.members) && p.members.length > 0
+      ? p.members
+      : [{ userId: ownerId, name: ownerName, avatar: ownerAvatar, role: 'Owner / Lead', joinedAt: createdAt }];
+
+    projectMap.set(p.id, {
+      ...p,
+      members,
+      currentMembers: members.length,
+      status: p.status || (p.isOpen === false ? 'closed' : 'open')
+    });
+  });
+
   dbProjects.forEach((p) => projectMap.set(p.id, p));
 
   const allProjects = Array.from(projectMap.values());
@@ -524,10 +553,112 @@ export async function fetchProjectsFromDB(): Promise<{ projects: Project[]; sour
     return { projects: allProjects, source: dbProjects.length > 0 ? 'dynamodb' : 'disk' };
   }
 
+  // Strict separation of real vs. mock data in production (Audit Item #14)
+  if (process.env.NODE_ENV === 'production') {
+    return { projects: [], source: 'disk' };
+  }
+
   return { projects: initialProjects, source: 'fallback' };
 }
 
+export async function getProjectById(projectId: string): Promise<Project | null> {
+  const local = getLocalProjects();
+  const foundLocal = local.find((p) => p.id === projectId);
+  if (foundLocal) {
+    const ownerId = foundLocal.ownerId || 'student-admin';
+    const ownerName = foundLocal.ownerName || 'Campus Builder';
+    const ownerAvatar = foundLocal.ownerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(ownerId)}`;
+    const createdAt = foundLocal.createdAt || new Date().toISOString();
+    const members = Array.isArray(foundLocal.members) && foundLocal.members.length > 0
+      ? foundLocal.members
+      : [{ userId: ownerId, name: ownerName, avatar: ownerAvatar, role: 'Owner / Lead', joinedAt: createdAt }];
+    return {
+      ...foundLocal,
+      members,
+      currentMembers: members.length,
+      status: foundLocal.status || (foundLocal.isOpen === false ? 'closed' : 'open')
+    };
+  }
+
+  if (globalStore.__cc_projects?.has(projectId)) {
+    return globalStore.__cc_projects.get(projectId)!;
+  }
+
+  const client = getDocClient();
+  if (client) {
+    try {
+      const res = await client.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            pk: `PROJECT#${projectId}`,
+            sk: 'METADATA'
+          }
+        })
+      );
+      if (res.Item) {
+        const it = res.Item;
+        const ownerId = it.ownerId || 'student-admin';
+        const ownerName = it.ownerName || 'Campus Builder';
+        const ownerAvatar = it.ownerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(ownerId)}`;
+        const createdAt = it.createdAt || new Date().toISOString();
+        const members = Array.isArray(it.members) && it.members.length > 0
+          ? it.members
+          : [{ userId: ownerId, name: ownerName, avatar: ownerAvatar, role: 'Owner / Lead', joinedAt: createdAt }];
+
+        const project: Project = {
+          id: it.id || projectId,
+          title: it.title || 'Untitled Project',
+          tagline: it.tagline || '',
+          description: it.description || '',
+          type: it.type || 'Personal',
+          ownerId,
+          ownerName,
+          ownerAvatar,
+          ownerCollege: it.ownerCollege || 'Engineering Institute',
+          createdAt,
+          requiredSkills: Array.isArray(it.requiredSkills) ? it.requiredSkills : [],
+          currentMembers: members.length,
+          maxMembers: it.maxMembers || 4,
+          isOpen: it.isOpen !== undefined ? it.isOpen : true,
+          status: it.status || (it.isOpen === false ? 'closed' : 'open'),
+          likesCount: it.likesCount || 0,
+          tags: Array.isArray(it.tags) ? it.tags : [],
+          comments: Array.isArray(it.comments) ? it.comments : [],
+          members,
+          rolesNeeded: Array.isArray(it.rolesNeeded) ? it.rolesNeeded : []
+        };
+        saveLocalProject(project);
+        return project;
+      }
+    } catch (err) {
+      console.warn('[DB] Error looking up project by ID:', err);
+    }
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    const mock = initialProjects.find((p) => p.id === projectId);
+    if (mock) return mock;
+  }
+
+  return null;
+}
+
 export async function saveProjectToDB(project: Project): Promise<boolean> {
+  // Ensure members list is populated
+  if (!project.members || project.members.length === 0) {
+    project.members = [
+      {
+        userId: project.ownerId,
+        name: project.ownerName,
+        avatar: project.ownerAvatar,
+        role: 'Owner / Lead',
+        joinedAt: project.createdAt || new Date().toISOString()
+      }
+    ];
+  }
+  project.currentMembers = project.members.length;
+
   // 1. Always persist to server persistent file store first (guaranteed persistence across restarts)
   saveLocalProject(project);
 
@@ -593,8 +724,10 @@ export async function fetchEventsFromDB(): Promise<{ events: CampusEvent[]; sour
   }
 
   const eventMap = new Map<string, CampusEvent>();
-  // Seed with initialCampusEvents if empty
-  initialCampusEvents.forEach((e) => eventMap.set(e.id, e));
+  // Seed with initialCampusEvents only in development/demo (Audit Item #14)
+  if (process.env.NODE_ENV !== 'production') {
+    initialCampusEvents.forEach((e) => eventMap.set(e.id, e));
+  }
   localEvents.forEach((e) => eventMap.set(e.id, e));
   dbEvents.forEach((e) => eventMap.set(e.id, e));
 
@@ -861,7 +994,7 @@ export async function updateUserPassword(email: string, newPasswordHash: string)
     return false;
   }
 
-  const studentId = auth?.studentId || student?.id || `student-${Date.now()}`;
+  const studentId = auth?.studentId || student?.id || crypto.randomUUID();
   const studentProfile = auth?.student || student || undefined;
 
   // 2. Save updated auth record in in-memory and local disk tiers
@@ -974,7 +1107,7 @@ export async function saveCollaborationRequestToDB(req: CollaborationRequest): P
   // 3. Dispatch in-app notification to receiver
   if (req.receiverId) {
     saveNotificationToDB({
-      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: crypto.randomUUID(),
       userId: req.receiverId,
       type: 'collaboration_request',
       title: 'New Collaboration Request! 📬',
@@ -1128,7 +1261,7 @@ export async function updateCollaborationRequestStatusInDB(
   const targetReq = globalStore.__cc_requests?.get(requestId) || current.find((r) => r.id === requestId);
   if (targetReq && targetReq.senderId) {
     saveNotificationToDB({
-      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: crypto.randomUUID(),
       userId: targetReq.senderId,
       type: status === 'accepted' ? 'request_accepted' : 'request_declined',
       title: status === 'accepted' ? 'Collaboration Accepted! 🎉' : 'Request Update',
@@ -1171,7 +1304,7 @@ export async function addProjectCommentToDB(projectId: string, comment: ProjectC
     // Notify project owner
     if (p.ownerId && p.ownerId !== comment.authorId) {
       saveNotificationToDB({
-        id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        id: crypto.randomUUID(),
         userId: p.ownerId,
         type: 'new_comment',
         title: 'New Project Comment 💬',

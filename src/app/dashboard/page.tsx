@@ -23,8 +23,10 @@ import {
   Code2,
   Plus,
   Link as LinkIcon,
-  Camera
+  Camera,
+  Clock
 } from 'lucide-react';
+import { formatTimeAgo } from '@/lib/utils';
 import AvatarPicker from '@/components/AvatarPicker';
 import { AvailabilityStatus } from '@/types';
 
@@ -559,7 +561,7 @@ export default function StudentDashboardPage() {
                           {req.senderName}
                         </div>
                         <div className="text-xs font-bold text-stone-600">
-                          {req.senderRole} · {req.createdAt}
+                          {req.senderRole} · {formatTimeAgo(req.createdAt)}
                         </div>
                       </div>
                     </div>
@@ -641,7 +643,7 @@ export default function StudentDashboardPage() {
                         To: {req.receiverName}
                       </div>
                       <div className="text-stone-600 font-medium text-[11px]">
-                        Project: {req.projectTitle} · Sent {req.createdAt}
+                        Project: {req.projectTitle} · Sent {formatTimeAgo(req.createdAt)}
                       </div>
                     </div>
 
@@ -703,7 +705,7 @@ export default function StudentDashboardPage() {
                     <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#FFDE59] text-black border border-black shadow-[1.5px_1.5px_0px_0px_#000]">
                       {proj.type}
                     </span>
-                    <span className="text-xs font-bold text-stone-500">{proj.createdAt}</span>
+                    <span className="text-xs font-bold text-stone-500">{formatTimeAgo(proj.createdAt)}</span>
                   </div>
                   <h4 className="font-black text-lg uppercase text-black">{proj.title}</h4>
                   <p className="text-xs font-medium text-stone-700 line-clamp-2 mt-1">
